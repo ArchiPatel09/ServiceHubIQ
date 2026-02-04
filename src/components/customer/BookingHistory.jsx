@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
-import { FaFilter, FaSearch, FaStar, FaCalendarAlt, FaTools } from 'react-icons/fa';
+import React, { useMemo, useState } from 'react';
+import { FaSearch, FaStar, FaCalendarAlt, FaTools, FaTimesCircle } from 'react-icons/fa';
+
+const BOOKINGS_KEY = 'servicehubiq_bookings_v1';
+
+const safeParse = (raw, fallback) => {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const normalizeStatus = (status) => (status || '').toLowerCase();
 
 const BookingHistory = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock booking history data
-  const bookings = [
+  // ✅ Fallback mock data (only used if localStorage is empty)
+  const mockBookings = useMemo(() => ([
     {
       id: 1,
       service: 'Plumbing Repair',
@@ -51,30 +63,99 @@ const BookingHistory = () => {
       price: 79,
       review: null
     }
-  ];
+  ]), []);
 
-  const filteredBookings = bookings.filter(booking => {
-    if (filter !== 'all' && booking.status.toLowerCase() !== filter.toLowerCase()) {
-      return false;
-    }
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        booking.service.toLowerCase().includes(searchLower) ||
-        booking.provider.toLowerCase().includes(searchLower)
-      );
-    }
-    return true;
+  // ✅ Load bookings from localStorage (created from ServiceBooking.jsx)
+  const [bookings, setBookings] = useState(() => {
+    const stored = safeParse(localStorage.getItem(BOOKINGS_KEY), []);
+    return stored.length ? stored : mockBookings;
   });
 
+  const persist = (next) => {
+    setBookings(next);
+    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(next));
+  };
+
+  const filteredBookings = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return bookings.filter((booking) => {
+      if (filter !== 'all') {
+        if (normalizeStatus(booking.status) !== filter) return false;
+      }
+      if (term) {
+        return (
+          (booking.service || '').toLowerCase().includes(term) ||
+          (booking.provider || '').toLowerCase().includes(term)
+        );
+      }
+      return true;
+    });
+  }, [bookings, filter, searchTerm]);
+
   const getStatusBadgeClass = (status) => {
-    switch (status.toLowerCase()) {
+    switch (normalizeStatus(status)) {
       case 'completed': return 'badge-success';
       case 'upcoming': return 'badge-warning';
       case 'cancelled': return 'badge-danger';
       default: return 'badge-secondary';
     }
   };
+
+  // ✅ Simple rating modal state (presentation-ready)
+  const [ratingModal, setRatingModal] = useState({ open: false, bookingId: null, rating: 5, review: '' });
+
+  const openRating = (booking) => {
+    setRatingModal({
+      open: true,
+      bookingId: booking.id,
+      rating: booking.rating ?? 5,
+      review: booking.review ?? ''
+    });
+  };
+
+  const closeRating = () => setRatingModal({ open: false, bookingId: null, rating: 5, review: '' });
+
+  const saveRating = () => {
+    const next = bookings.map((b) => {
+      if (b.id !== ratingModal.bookingId) return b;
+      return {
+        ...b,
+        status: 'Completed',
+        rating: Number(ratingModal.rating),
+        review: ratingModal.review || null
+      };
+    });
+    persist(next);
+    closeRating();
+  };
+
+  const cancelBooking = (bookingId) => {
+    const next = bookings.map((b) => (b.id === bookingId ? { ...b, status: 'Cancelled' } : b));
+    persist(next);
+  };
+
+  // const markCompletedForDemo = (bookingId) => {
+  //   // optional helper: makes demo easier if you want to rate something
+  //   const next = bookings.map((b) => (b.id === bookingId ? { ...b, status: 'Completed' } : b));
+  //   persist(next);
+  // };
+
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const completed = bookings.filter(b => normalizeStatus(b.status) === 'completed').length;
+    const rated = bookings.filter(b => typeof b.rating === 'number');
+
+    const avgRating = rated.length
+      ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
+      : '—';
+
+    const totalSpent = bookings
+      .filter(b => normalizeStatus(b.status) !== 'cancelled')
+      .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+
+    return { total, completed, avgRating, totalSpent };
+  }, [bookings]);
 
   return (
     <div className="booking-history-page">
@@ -96,28 +177,16 @@ const BookingHistory = () => {
         </div>
 
         <div className="filter-buttons">
-          <button 
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All Bookings
+          <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
+            All
           </button>
-          <button 
-            className={`filter-btn ${filter === 'completed' ? 'active' : ''}`}
-            onClick={() => setFilter('completed')}
-          >
+          <button className={`filter-btn ${filter === 'completed' ? 'active' : ''}`} onClick={() => setFilter('completed')}>
             Completed
           </button>
-          <button 
-            className={`filter-btn ${filter === 'upcoming' ? 'active' : ''}`}
-            onClick={() => setFilter('upcoming')}
-          >
+          <button className={`filter-btn ${filter === 'upcoming' ? 'active' : ''}`} onClick={() => setFilter('upcoming')}>
             Upcoming
           </button>
-          <button 
-            className={`filter-btn ${filter === 'cancelled' ? 'active' : ''}`}
-            onClick={() => setFilter('cancelled')}
-          >
+          <button className={`filter-btn ${filter === 'cancelled' ? 'active' : ''}`} onClick={() => setFilter('cancelled')}>
             Cancelled
           </button>
         </div>
@@ -147,10 +216,12 @@ const BookingHistory = () => {
                     <strong>Date:</strong> {booking.date} at {booking.time}
                   </div>
                 </div>
+
                 <div className="detail-item">
                   <strong>Price:</strong> ${booking.price}
                 </div>
-                {booking.rating && (
+
+                {typeof booking.rating === 'number' && (
                   <div className="detail-item">
                     <FaStar className="detail-icon" />
                     <div>
@@ -168,16 +239,30 @@ const BookingHistory = () => {
               )}
 
               <div className="booking-actions">
-                {booking.status === 'Upcoming' && (
+                {normalizeStatus(booking.status) === 'upcoming' && (
                   <>
-                    <button className="btn btn-outline btn-sm">Reschedule</button>
-                    <button className="btn btn-danger btn-sm">Cancel</button>
+                    {/* ✅ Demo-safe actions that actually work */}
+                    <button className="btn btn-danger btn-sm" onClick={() => cancelBooking(booking.id)}>
+                      Cancel
+                    </button>
+
+                    {/* Optional demo helper: mark completed to allow rating */}
+                    {/* <button className="btn btn-outline btn-sm" onClick={() => markCompletedForDemo(booking.id)}>
+                      Mark Completed (Demo)
+                    </button> */}
                   </>
                 )}
-                {booking.status === 'Completed' && !booking.rating && (
-                  <button className="btn btn-primary btn-sm">Rate Service</button>
+
+                {normalizeStatus(booking.status) === 'completed' && typeof booking.rating !== 'number' && (
+                  <button className="btn btn-primary btn-sm" onClick={() => openRating(booking)}>
+                    Rate Service
+                  </button>
                 )}
-                <button className="btn btn-outline btn-sm">View Details</button>
+
+                {/* ✅ Avoid broken routes in demo */}
+                <button className="btn btn-outline btn-sm" disabled title="Details page planned for Sprint 2">
+                  View Details
+                </button>
               </div>
             </div>
           ))}
@@ -189,33 +274,77 @@ const BookingHistory = () => {
         </div>
       )}
 
+      {/* Stats */}
       <div className="history-stats">
         <div className="stat-item">
           <h4>Total Bookings</h4>
-          <p className="stat-number">{bookings.length}</p>
+          <p className="stat-number">{stats.total}</p>
         </div>
         <div className="stat-item">
           <h4>Completed</h4>
-          <p className="stat-number">{bookings.filter(b => b.status === 'Completed').length}</p>
+          <p className="stat-number">{stats.completed}</p>
         </div>
         <div className="stat-item">
           <h4>Average Rating</h4>
-          <p className="stat-number">
-            {(() => {
-              const ratedBookings = bookings.filter(b => b.rating);
-              if (ratedBookings.length === 0) return 'N/A';
-              const avg = ratedBookings.reduce((sum, b) => sum + b.rating, 0) / ratedBookings.length;
-              return avg.toFixed(1);
-            })()}
-          </p>
+          <p className="stat-number">{stats.avgRating}</p>
         </div>
         <div className="stat-item">
           <h4>Total Spent</h4>
-          <p className="stat-number">
-            ${bookings.reduce((sum, b) => sum + b.price, 0)}
-          </p>
+          <p className="stat-number">${stats.totalSpent}</p>
         </div>
       </div>
+
+      {/* Rating Modal */}
+      {ratingModal.open && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            zIndex: 9999
+          }}
+        >
+          <div style={{ background: '#fff', borderRadius: 10, width: '100%', maxWidth: 520, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Rate Service</h3>
+              <button className="btn btn-outline btn-sm" onClick={closeRating}>
+                <FaTimesCircle />
+              </button>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label><strong>Rating</strong></label>
+              <select
+                className="form-control"
+                value={ratingModal.rating}
+                onChange={(e) => setRatingModal(prev => ({ ...prev, rating: e.target.value }))}
+              >
+                {[5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label><strong>Review (optional)</strong></label>
+              <textarea
+                className="form-control"
+                rows="3"
+                value={ratingModal.review}
+                onChange={(e) => setRatingModal(prev => ({ ...prev, review: e.target.value }))}
+                placeholder="Write a short review..."
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" onClick={closeRating}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveRating}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

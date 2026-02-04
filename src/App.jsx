@@ -9,7 +9,7 @@ import Footer from './components/layout/Footer';
 import HomePage from './components/home/HomePage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
-import RoleSelection from './components/auth/RoleSelection'; 
+// import RoleSelection from './components/auth/RoleSelection'; 
 import ServicesPage from './components/customer/ServicesPage';
 import ServiceBooking from './components/customer/ServiceBooking';
 import BookingHistory from './components/customer/BookingHistory';
@@ -19,6 +19,8 @@ import ProviderDashboard from './components/provider/ProviderDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import Settings from './components/shared/Settings';
 import NotFound from './components/shared/NotFound';
+import BookingConfirmation from './components/customer/BookingConfirmation';
+
 
 function RoleBasedRedirect() {
   const { user } = useAuth();
@@ -49,8 +51,8 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/role-selection" element={<RoleSelection />} /> {/* ADD THIS ROUTE */}
-              <Route path="/services" element={<ServicesPage />} />
+              {/* <Route path="/role-selection" element={<RoleSelection />} /> {/* ADD THIS ROUTE */}
+              {/* <Route path="/services" element={<ServicesPage />} />  */}
               
               {/* Protected Routes */}
               <Route path="/dashboard" element={
@@ -58,12 +60,18 @@ function App() {
                   <RoleBasedRedirect />
                 </ProtectedRoute>
               } />
+
+              <Route path="/services" element={
+                <ProtectedRoute requiredRole="customer">
+                  <ServicesPage />
+                </ProtectedRoute>
+              } />
               
-              <Route path="/customer-dashboard" element={
+              {/* <Route path="/customer-dashboard" element={
                 <ProtectedRoute requiredRole="customer">
                   <CustomerDashboard />
                 </ProtectedRoute>
-              } />
+              } /> */}
               
               <Route path="/book-service" element={
                 <ProtectedRoute requiredRole="customer">
@@ -103,6 +111,9 @@ function App() {
               
               {/* Catch all route - SHOULD BE LAST */}
               <Route path="*" element={<NotFound />} />
+
+              <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+
             </Routes>
           </main>
           <Footer />

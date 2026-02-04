@@ -1,16 +1,17 @@
 // Login.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { FaEnvelope, FaLock, FaUser, FaTools, FaUserShield } from 'react-icons/fa';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'customer'
+    // role: 'customer'
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -22,12 +23,8 @@ const Login = () => {
       [name]: value
     }));
     // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    if (errors.general) setErrors(prev => ({ ...prev, general: '' }));
   };
 
   const validateForm = () => {
@@ -56,7 +53,7 @@ const Login = () => {
     e.preventDefault();
     
     const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
+    if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
       return;
     }
@@ -64,11 +61,18 @@ const Login = () => {
     try {
       setLoading(true);
       await login(formData.email, formData.password, formData.role);
-      
-      // Navigate based on role
-      switch(formData.role) {
+
+const from = location.state?.from;
+
+      // If user was trying to open a protected customer page (like /book-service), go there first
+      if (from) {
+        navigate(from, { replace: true });
+        return;
+      }
+
+      switch (formData.role) {
         case 'customer':
-          navigate('/customer-dashboard');
+          navigate('/dashboard');
           break;
         case 'provider':
           navigate('/provider-dashboard');

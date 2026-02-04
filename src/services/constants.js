@@ -46,3 +46,8 @@ export const BOOKING_STATUS = {
   COMPLETED: 'completed',
   CANCELLED: 'cancelled'
 };
+
+// ✅ Added for checkpoint-stable booking persistence
+export const STORAGE_KEYS = {
+  BOOKINGS: 'servicehubiq_bookings_v1'
+};

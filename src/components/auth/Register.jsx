@@ -72,22 +72,24 @@ const handleSubmit = async (e) => {
     console.log('Registered user:', user); // Debug log
     
     // Navigate based on selected role - USE SAME PATHS AS LOGIN
-    switch(formData.userType) {
-      case 'customer':
-        navigate('/customer-dashboard'); // Changed from /dashboard
-        break;
-      case 'provider':
-        navigate('/provider-dashboard');
-        break;
-      case 'admin':
-        navigate('/admin-dashboard');
-        break;
-      default:
-        navigate('/customer-dashboard');
-    }
+    // switch(formData.userType) {
+    //   case 'customer':
+    //     navigate('/dashboard'); // Changed from /dashboard
+    //     break;
+    //   case 'provider':
+    //     navigate('/provider-dashboard');
+    //     break;
+    //   case 'admin':
+    //     navigate('/admin-dashboard');
+    //     break;
+    //   default:
+    //     navigate('/dashboard');
+        navigate('/login', { replace: true });
+
+    
   } catch (error) {
     console.error('Registration error:', error);
-    setErrors({ general: error.message });
+    setErrors({ general: error.message || 'Registration failed. Please try again.' });
   }
 };
 

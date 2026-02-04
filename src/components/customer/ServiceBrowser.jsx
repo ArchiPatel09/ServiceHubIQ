@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ServiceCard from '../shared/ServiceCard';
-import { FaSearch, FaFilter, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo, FaCheckCircle } from 'react-icons/fa';
 
 const ServiceBrowser = () => {
+  const navigate = useNavigate();
+
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,8 +36,8 @@ const ServiceBrowser = () => {
     'Halifax, NS'
   ];
 
-  // Mock data - replace with API call
-  const mockServices = [
+  // ✅ Mock data for Sprint 1 demo
+  const mockServices = useMemo(() => ([
     {
       id: 1,
       name: 'Emergency Plumbing Service',
@@ -83,22 +86,24 @@ const ServiceBrowser = () => {
       location: 'Calgary, AB',
       available: true
     }
-  ];
+  ]), []);
 
   useEffect(() => {
-    // Simulate API call
+    // Simulate API call (Sprint 1)
     setServices(mockServices);
     setFilteredServices(mockServices);
-  }, []);
+  }, [mockServices]);
 
   useEffect(() => {
     let filtered = services;
 
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(service =>
-        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.description.toLowerCase().includes(searchTerm.toLowerCase())
+        service.name.toLowerCase().includes(term) ||
+        service.category.toLowerCase().includes(term) ||
+        service.description.toLowerCase().includes(term) ||
+        service.provider.toLowerCase().includes(term)
       );
     }
 
@@ -117,16 +122,46 @@ const ServiceBrowser = () => {
     setFilteredServices(filtered);
   }, [searchTerm, selectedCategory, selectedLocation, services]);
 
+  // ✅ IMPORTANT: useNavigate instead of window.location.href (no reload, safer demo)
   const handleBookService = (serviceId) => {
-    // Navigate to booking page with service ID
-    window.location.href = `/book-service?service=${serviceId}`;
+    navigate(`/book-service?service=${serviceId}`);
   };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setSelectedLocation('');
+  };
+
+  const activeFiltersCount =
+    (searchTerm.trim() ? 1 : 0) +
+    (selectedCategory !== 'all' ? 1 : 0) +
+    (selectedLocation ? 1 : 0);
 
   return (
     <div className="service-browser">
       <div className="browser-header">
         <h2>Find Professional Services</h2>
         <p>Browse and book verified service professionals across Canada</p>
+
+        {/* ✅ Presentation-ready badge (shows scope is intentional) */}
+        <div style={{ marginTop: 10 }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: '#f0fdf4',
+              color: '#166534',
+              fontSize: 13
+            }}
+          >
+            {/* <FaCheckCircle />
+            Sprint 1 Demo: Browse → Book → View History */}
+          </span>
+        </div>
       </div>
 
       {/* Filters & Search */}
@@ -135,7 +170,7 @@ const ServiceBrowser = () => {
           <FaSearch className="search-icon" />
           <input
             type="text"
-            placeholder="Search services..."
+            placeholder="Search services, categories, providers..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -173,6 +208,20 @@ const ServiceBrowser = () => {
               ))}
             </select>
           </div>
+
+          {/* ✅ Clear filters button appears only when filters are active */}
+          {activeFiltersCount > 0 && (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={clearFilters}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              title="Clear filters"
+            >
+              <FaUndo />
+              Clear ({activeFiltersCount})
+            </button>
+          )}
         </div>
       </div>
 
@@ -190,7 +239,10 @@ const ServiceBrowser = () => {
       ) : (
         <div className="no-results">
           <h3>No services found</h3>
-          <p>Try adjusting your search criteria</p>
+          <p>Try adjusting your search criteria or clear the filters.</p>
+          <button type="button" className="btn btn-primary" onClick={clearFilters}>
+            Show All Services
+          </button>
         </div>
       )}
 
@@ -210,7 +262,7 @@ const ServiceBrowser = () => {
         </div>
         <div className="stat-card">
           <h4>24/7</h4>
-          <p>Emergency Support</p>
+          <p>Support Availability</p>
         </div>
       </div>
     </div>

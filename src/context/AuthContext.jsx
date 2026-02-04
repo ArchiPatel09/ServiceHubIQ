@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }) => {
     id: Date.now().toString(),
     name: userData.name,
     email: userData.email,
-    password: userData.password,
+    // password: userData.password,
     phone: userData.phone || '',
     address: userData.address || '',
     role: userData.userType || 'customer', // CRITICAL: Map userType to role
@@ -134,7 +134,8 @@ export const AuthProvider = ({ children }) => {
     })
   };
 
-  console.log('Registering user:', newUser); // Debug log
+    console.log('Registering user with role:', newUser.role);
+
   
   // Set user and save to localStorage
   setUser(newUser);
