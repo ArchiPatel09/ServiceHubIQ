@@ -1,176 +1,203 @@
-// src/pages/ProviderDashboard.jsx
-import React from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  FaBriefcase, 
-  FaCalendarCheck, 
-  FaMoneyBillWave, 
-  FaStar, 
-  FaChartLine,
+import { bookingAPI, extractApiError } from '../../services/api';
+import {
+  FaBriefcase,
+  FaCalendarCheck,
+  FaStar,
   FaClipboardList,
-  FaUserFriends,
-  FaHistory,
-  FaStarHalfAlt
+  FaClock,
+  FaSyncAlt
 } from 'react-icons/fa';
+
+const toUiDate = (iso) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleString();
+};
+
+const nextStatus = (status) => {
+  if (status === 'Pending') return 'In Progress';
+  if (status === 'In Progress') return 'Completed';
+  return null;
+};
 
 const ProviderDashboard = () => {
   const { user } = useAuth();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [updatingId, setUpdatingId] = useState('');
 
-  // Mock provider data
-  const providerStats = {
-    totalJobs: 45,
-    completedJobs: 42,
-    pendingJobs: 3,
-    earnings: 3850,
-    rating: 4.8,
-    responseRate: 95,
-    repeatCustomers: 12
+  const loadBookings = async (silent = false) => {
+    try {
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError('');
+
+      const response = await bookingAPI.getProviderBookings();
+      const data = response?.data?.data || [];
+      setBookings(data);
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to load provider bookings'));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  // Recent jobs
-  const recentJobs = [
-    { id: 1, service: 'Plumbing Repair', customer: 'John Smith', date: '2024-01-18', amount: 120, rating: 5 },
-    { id: 2, service: 'Leak Fix', customer: 'Sarah Johnson', date: '2024-01-17', amount: 85, rating: 4 },
-    { id: 3, service: 'Pipe Installation', customer: 'Mike Wilson', date: '2024-01-16', amount: 200, rating: 5 }
-  ];
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
-  // Recent ratings
-  const recentRatings = [
-    { id: 1, customer: 'John Smith', rating: 5, comment: 'Excellent work! Very professional.', date: '2024-01-18' },
-    { id: 2, customer: 'Sarah Johnson', rating: 4, comment: 'Good service, arrived on time.', date: '2024-01-17' },
-    { id: 3, customer: 'Emma Brown', rating: 5, comment: 'Highly recommended!', date: '2024-01-16' }
-  ];
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const pending = bookings.filter((b) => b.status === 'Pending').length;
+    const inProgress = bookings.filter((b) => b.status === 'In Progress').length;
+    const completed = bookings.filter((b) => b.status === 'Completed').length;
+
+    return { total, pending, inProgress, completed };
+  }, [bookings]);
+
+  const recentBookings = useMemo(
+    () => [...bookings].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8),
+    [bookings]
+  );
+
+  const handleAdvanceStatus = async (booking) => {
+    const target = nextStatus(booking.status);
+    if (!target) return;
+
+    try {
+      setUpdatingId(booking._id);
+      await bookingAPI.updateBookingStatus(booking._id, target);
+      await loadBookings(true);
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to update booking status'));
+    } finally {
+      setUpdatingId('');
+    }
+  };
 
   return (
     <div className="provider-dashboard">
       <div className="dashboard-header">
         <h1>Provider Dashboard</h1>
-        <p>Welcome back, {user?.name} ({user?.serviceType || 'Service Provider'})</p>
+        <p>
+          Welcome back, {user?.name} ({user?.profession || 'Service Provider'})
+        </p>
       </div>
 
-      {/* Stats */}
+      {error && <p className="form-error-message">{error}</p>}
+
       <div className="dashboard-stats">
         <div className="stat-card">
           <div className="stat-icon">
             <FaBriefcase />
           </div>
           <div className="stat-content">
-            <h3>{providerStats.totalJobs}</h3>
+            <h3>{stats.total}</h3>
             <p>Total Jobs</p>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">
-            <FaMoneyBillWave />
+            <FaClock />
           </div>
           <div className="stat-content">
-            <h3>${providerStats.earnings}</h3>
-            <p>Total Earnings</p>
+            <h3>{stats.pending}</h3>
+            <p>Pending</p>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">
-            <FaStar />
+            <FaClipboardList />
           </div>
           <div className="stat-content">
-            <h3>{providerStats.rating}</h3>
-            <p>Average Rating</p>
+            <h3>{stats.inProgress}</h3>
+            <p>In Progress</p>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">
-            <FaUserFriends />
+            <FaCalendarCheck />
           </div>
           <div className="stat-content">
-            <h3>{providerStats.repeatCustomers}</h3>
-            <p>Repeat Customers</p>
+            <h3>{stats.completed}</h3>
+            <p>Completed</p>
           </div>
         </div>
       </div>
 
-      {/* Quick Links */}
+      <div className="dashboard-section">
+        <div className="section-header provider-section-header">
+          <h2>
+            <FaStar /> Assigned Bookings
+          </h2>
+          <button className="btn btn-outline btn-sm" onClick={() => loadBookings(true)} disabled={refreshing || loading}>
+            <FaSyncAlt /> {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="dashboard-loading">Loading bookings...</div>
+        ) : recentBookings.length === 0 ? (
+          <div className="dashboard-empty-message">No assigned bookings yet.</div>
+        ) : (
+          <div className="jobs-list">
+            {recentBookings.map((booking) => {
+              const target = nextStatus(booking.status);
+              const customer = booking.customerId || {};
+
+              return (
+                <div key={booking._id} className="job-card">
+                  <div className="job-info">
+                    <h4>{booking.serviceType}</h4>
+                    <p className="job-customer">Customer: {customer.name || 'Unknown'}</p>
+                    <p className="job-date">Scheduled: {toUiDate(booking.date)}</p>
+                    <p className="job-date">Address: {booking.address}</p>
+                    <p className="job-date">Status: {booking.status}</p>
+                  </div>
+                  <div className="provider-job-actions">
+                    {target ? (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleAdvanceStatus(booking)}
+                        disabled={updatingId === booking._id}
+                      >
+                        {updatingId === booking._id ? 'Updating...' : `Mark ${target}`}
+                      </button>
+                    ) : (
+                      <button className="btn btn-outline btn-sm" disabled>
+                        Completed
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="quick-links-section">
         <h2>Quick Access</h2>
         <div className="quick-links">
-          <Link to="/provider-history" className="quick-link">
-            <FaHistory />
-            <div>
-              <h4>Work History</h4>
-              <p>View all your completed jobs</p>
-            </div>
-          </Link>
-          
-          <div className="quick-link">
-            <FaStarHalfAlt />
-            <div>
-              <h4>Ratings & Reviews</h4>
-              <p>See what customers say about you</p>
-            </div>
-          </div>
-          
           <Link to="/profile" className="quick-link">
-            <FaUserFriends />
+            <FaClipboardList />
             <div>
-              <h4>Profile & Settings</h4>
-              <p>Update your information</p>
+              <h4>Profile</h4>
+              <p>Update your provider details</p>
             </div>
           </Link>
-        </div>
-      </div>
-
-      {/* Recent Jobs */}
-      <div className="recent-section">
-        <div className="section-header">
-          <h2>Recent Jobs</h2>
-          <Link to="/provider-history" className="btn btn-outline btn-sm">
-            View All
-          </Link>
-        </div>
-        <div className="jobs-list">
-          {recentJobs.map(job => (
-            <div key={job.id} className="job-card">
-              <div className="job-info">
-                <h4>{job.service}</h4>
-                <p className="job-customer">{job.customer}</p>
-                <p className="job-date">{job.date}</p>
-              </div>
-              <div className="job-details">
-                <div className="job-amount">${job.amount}</div>
-                <div className="job-rating">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar key={i} className={i < job.rating ? 'star-filled' : 'star-empty'} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Ratings */}
-      <div className="ratings-section">
-        <h2>Recent Ratings</h2>
-        <div className="ratings-list">
-          {recentRatings.map(rating => (
-            <div key={rating.id} className="rating-card">
-              <div className="rating-header">
-                <div className="rating-customer">
-                  <strong>{rating.customer}</strong>
-                  <div className="rating-stars">
-                    {[...Array(5)].map((_, i) => (
-                      <FaStar key={i} className={i < rating.rating ? 'star-filled' : 'star-empty'} />
-                    ))}
-                  </div>
-                </div>
-                <div className="rating-date">{rating.date}</div>
-              </div>
-              <p className="rating-comment">{rating.comment}</p>
-            </div>
-          ))}
         </div>
       </div>
     </div>

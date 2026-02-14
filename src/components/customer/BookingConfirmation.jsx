@@ -1,35 +1,86 @@
-import React, { useMemo } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaTools, FaReceipt } from 'react-icons/fa';
-
-const BOOKINGS_KEY = 'servicehubiq_bookings_v1';
-
-const safeParse = (raw, fallback) => {
-  try {
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-};
+import { bookingAPI, extractApiError } from '../../services/api';
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const bookingIdParam = params.get('id'); // e.g. ?id=1700000000000
+  const bookingIdParam = params.get('id');
 
-  const booking = useMemo(() => {
-    const all = safeParse(localStorage.getItem(BOOKINGS_KEY), []);
-    if (!all.length) return null;
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    // If id exists in URL, find it, else show latest booking
-    if (bookingIdParam) {
-      const idNum = Number(bookingIdParam);
-      return all.find(b => Number(b.id) === idNum) || all[0];
-    }
-    return all[0];
+  useEffect(() => {
+    const loadBooking = async () => {
+      try {
+        const response = await bookingAPI.getCustomerBookings();
+        const bookings = response?.data?.data || [];
+
+        if (!bookings.length) {
+          setBooking(null);
+          return;
+        }
+
+        let chosen = bookings[0];
+        if (bookingIdParam) {
+          const found = bookings.find((b) => b._id === bookingIdParam);
+          if (found) chosen = found;
+        }
+
+        setBooking(chosen);
+      } catch (err) {
+        setError(extractApiError(err, 'Could not load booking confirmation'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBooking();
   }, [bookingIdParam]);
 
-  if (!booking) {
+  const formatted = useMemo(() => {
+    if (!booking) return null;
+    const dateObj = booking.date ? new Date(booking.date) : null;
+    return {
+      id: booking._id,
+      service: booking.serviceType,
+      provider: booking.providerId?.name || 'Assigned Provider',
+      date: dateObj ? dateObj.toLocaleDateString() : '-',
+      time: dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+      address: booking.address,
+      status: booking.status
+    };
+  }, [booking]);
+
+  if (loading) {
+    return (
+      <div className="booking-confirmation-page">
+        <div className="booking-container">
+          <h1>Booking Confirmation</h1>
+          <p>Loading booking...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="booking-confirmation-page">
+        <div className="booking-container">
+          <h1>Booking Confirmation</h1>
+          <p>{error}</p>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <Link className="btn btn-primary" to="/services">Browse Services</Link>
+            <Link className="btn btn-outline" to="/dashboard">Back to Dashboard</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!formatted) {
     return (
       <div className="booking-confirmation-page">
         <div className="booking-container">
@@ -56,55 +107,20 @@ const BookingConfirmation = () => {
         </div>
 
         <div className="booking-summary" style={{ marginTop: 12 }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FaReceipt /> Confirmation Details
-          </h3>
-
-          <div className="summary-item">
-            <strong>Booking ID:</strong> {booking.id}
-          </div>
-
-          <div className="summary-item">
-            <strong><FaTools /> Service:</strong> {booking.service}
-          </div>
-
-          <div className="summary-item">
-            <strong>Provider:</strong> {booking.provider || '—'}
-          </div>
-
-          <div className="summary-item">
-            <strong><FaCalendarAlt /> Date:</strong> {booking.date}
-          </div>
-
-          <div className="summary-item">
-            <strong><FaClock /> Time:</strong> {booking.time}
-          </div>
-
-          <div className="summary-item">
-            <strong><FaMapMarkerAlt /> Address:</strong> {booking.address || '—'}
-          </div>
-
-          <div className="summary-total">
-            <strong>Total:</strong> ${booking.price}
-          </div>
-
-          {booking.specialInstructions && (
-            <div className="booking-review" style={{ marginTop: 10 }}>
-              <strong>Special Instructions:</strong> {booking.specialInstructions}
-            </div>
-          )}
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaReceipt /> Confirmation Details</h3>
+          <div className="summary-item"><strong>Booking ID:</strong> {formatted.id}</div>
+          <div className="summary-item"><strong><FaTools /> Service:</strong> {formatted.service}</div>
+          <div className="summary-item"><strong>Provider:</strong> {formatted.provider}</div>
+          <div className="summary-item"><strong><FaCalendarAlt /> Date:</strong> {formatted.date}</div>
+          <div className="summary-item"><strong><FaClock /> Time:</strong> {formatted.time}</div>
+          <div className="summary-item"><strong><FaMapMarkerAlt /> Address:</strong> {formatted.address || '-'}</div>
+          <div className="summary-item"><strong>Status:</strong> {formatted.status}</div>
         </div>
 
         <div className="booking-actions" style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link className="btn btn-primary" to="/booking-history">View Booking History</Link>
           <Link className="btn btn-outline" to="/dashboard">Back to Dashboard</Link>
-          <button className="btn btn-outline" onClick={() => navigate('/services')} type="button">
-            Book Another Service
-          </button>
-        </div>
-
-        <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>
-          Note: For Sprint 1, bookings are stored in browser localStorage for demo persistence.
+          <button className="btn btn-outline" onClick={() => navigate('/services')} type="button">Book Another Service</button>
         </div>
       </div>
     </div>

@@ -1,196 +1,184 @@
-// AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+﻿import React, { createContext, useState, useContext, useEffect } from 'react';
+import { authAPI, extractApiError } from '../services/api';
 
 const AuthContext = createContext({});
+
+const USER_STORAGE_KEY = 'servicehubiq_user';
+const TOKEN_STORAGE_KEY = 'token';
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Temporary storage for bookings
-  const [bookings, setBookings] = useState(() => {
-    const savedBookings = localStorage.getItem('servicehubiq_bookings');
-    return savedBookings ? JSON.parse(savedBookings) : [];
-  });
 
-  useEffect(() => {
-    // Load user from localStorage
-    const storedUser = localStorage.getItem('servicehubiq_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('servicehubiq_user');
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  // Save bookings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('servicehubiq_bookings', JSON.stringify(bookings));
-  }, [bookings]);
-
-  // Enhanced login with validation
-  const login = (email, password, role) => {
-    // Basic validation
-    if (!email || !password) {
-      throw new Error('Email and password are required');
-    }
-    
-    if (!email.includes('@')) {
-      throw new Error('Invalid email format');
-    }
-    
-    if (password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
-    }
-
-    // Mock user data - in real app, this would come from API
-    let mockUser;
-    if (role === 'customer') {
-      mockUser = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        role: 'customer',
-        phone: '+1 (416) 555-0123',
-        address: '123 Main St, Toronto, ON',
-        token: 'mock-jwt-token',
-        joined: new Date().toISOString().split('T')[0]
-      };
-    } else if (role === 'provider') {
-      mockUser = {
-        id: '2',
-        email,
-        name: email.split('@')[0],
-        role: 'provider',
-        serviceType: 'Plumbing',
-        rating: 4.8,
-        completedJobs: 42,
-        phone: '+1 (416) 555-0123',
-        token: 'mock-jwt-token',
-        joined: new Date().toISOString().split('T')[0]
-      };
-    } else if (role === 'admin') {
-      mockUser = {
-        id: '3',
-        email,
-        name: 'Admin User',
-        role: 'admin',
-        token: 'mock-jwt-token',
-        permissions: ['users', 'bookings', 'providers', 'analytics'],
-        joined: new Date().toISOString().split('T')[0]
-      };
-    }
-
-    setUser(mockUser);
-    localStorage.setItem('servicehubiq_user', JSON.stringify(mockUser));
-    
-    // Clear any old bookings for new user
-    if (role !== 'customer') {
-      localStorage.removeItem('servicehubiq_bookings');
-    }
-    
-    return mockUser;
+  const setSession = (token, userObj) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userObj));
+    setUser(userObj);
   };
-
- const register = (userData) => {
-  // Registration validation
-  const errors = {};
-  if (!userData.name) errors.name = 'Name is required';
-  if (!userData.email) errors.email = 'Email is required';
-  if (!userData.password) errors.password = 'Password is required';
-  if (userData.password !== userData.confirmPassword) {
-    errors.confirmPassword = 'Passwords do not match';
-  }
-  
-  if (Object.keys(errors).length > 0) {
-    throw new Error(Object.values(errors).join(', '));
-  }
-
-  // IMPORTANT: Map userType to role
-  const newUser = {
-    id: Date.now().toString(),
-    name: userData.name,
-    email: userData.email,
-    // password: userData.password,
-    phone: userData.phone || '',
-    address: userData.address || '',
-    role: userData.userType || 'customer', // CRITICAL: Map userType to role
-    token: 'mock-jwt-token',
-    joined: new Date().toISOString().split('T')[0],
-    // Add role-specific data
-    ...(userData.userType === 'provider' && {
-      serviceType: 'General Service',
-      rating: 0,
-      completedJobs: 0
-    }),
-    ...(userData.userType === 'admin' && {
-      permissions: ['users', 'bookings', 'providers', 'analytics']
-    })
-  };
-
-    console.log('Registering user with role:', newUser.role);
-
-  
-  // Set user and save to localStorage
-  setUser(newUser);
-  localStorage.setItem('servicehubiq_user', JSON.stringify(newUser));
-  
-  return newUser;
-};
 
   const logout = () => {
     setUser(null);
-    setBookings([]);
-    localStorage.removeItem('servicehubiq_user');
-    localStorage.removeItem('servicehubiq_bookings');
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  };
+
+  const fetchMe = async () => {
+    const response = await authAPI.me();
+    return response?.data?.data?.user;
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const me = await fetchMe();
+        if (!me) throw new Error('No user found');
+        setUser(me);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(me));
+      } catch {
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch {
+            logout();
+          }
+        } else {
+          logout();
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  const login = async (email, password, role) => {
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+
+    if (role === 'admin') {
+      throw new Error('Admin login is not supported by this backend');
+    }
+
+    const response = await authAPI.login({ email, password });
+    const token = response?.data?.data?.token;
+    const loggedInUser = response?.data?.data?.user;
+
+    if (!token || !loggedInUser) {
+      throw new Error('Invalid login response from server');
+    }
+
+    if (role && loggedInUser.role !== role) {
+      throw new Error(`This account is registered as ${loggedInUser.role}`);
+    }
+
+    setSession(token, loggedInUser);
+    return loggedInUser;
+  };
+
+  const completeOAuthLogin = async (token) => {
+    if (!token) {
+      throw new Error('OAuth token is missing');
+    }
+
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+
+    try {
+      const me = await fetchMe();
+      if (!me) {
+        throw new Error('Failed to load user profile');
+      }
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(me));
+      setUser(me);
+      return me;
+    } catch (error) {
+      logout();
+      throw error;
+    }
+  };
+
+  const register = async (userData) => {
+    const payload = {
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      phone: userData.phone,
+      address: userData.address
+    };
+
+    const role = userData.userType || 'customer';
+
+    if (role === 'admin') {
+      throw new Error('Admin registration is not supported by this backend');
+    }
+
+    let response;
+    if (role === 'provider') {
+      if (!userData.profession) {
+        throw new Error('Profession is required for provider registration');
+      }
+      response = await authAPI.registerProvider({ ...payload, profession: userData.profession });
+    } else {
+      response = await authAPI.registerCustomer(payload);
+    }
+
+    return response?.data?.data?.user;
   };
 
   const updateProfile = (updates) => {
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
-    localStorage.setItem('servicehubiq_user', JSON.stringify(updatedUser));
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
     return updatedUser;
   };
 
-  // Booking functions
-  const addBooking = (bookingData) => {
-    const newBooking = {
-      id: Date.now().toString(),
-      ...bookingData,
-      date: new Date().toISOString(),
-      status: 'pending'
-    };
-    
-    setBookings(prev => [...prev, newBooking]);
-    return newBooking;
-  };
-
-  const cancelBooking = (bookingId) => {
-    setBookings(prev => prev.filter(booking => booking.id !== bookingId));
+  const updateRole = (newRole) => {
+    const updatedUser = { ...user, role: newRole };
+    setUser(updatedUser);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+    return updatedUser;
   };
 
   const value = {
     user,
-    bookings,
-    login,
-    register,
+    login: async (email, password, role) => {
+      try {
+        return await login(email, password, role);
+      } catch (error) {
+        throw new Error(extractApiError(error, 'Login failed'));
+      }
+    },
+    completeOAuthLogin: async (token) => {
+      try {
+        return await completeOAuthLogin(token);
+      } catch (error) {
+        throw new Error(extractApiError(error, 'OAuth login failed'));
+      }
+    },
+    register: async (payload) => {
+      try {
+        return await register(payload);
+      } catch (error) {
+        throw new Error(extractApiError(error, 'Registration failed'));
+      }
+    },
     logout,
     updateProfile,
-    addBooking,
-    cancelBooking,
+    updateRole,
     isAuthenticated: !!user,
     loading
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

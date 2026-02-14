@@ -4748,3 +4748,482 @@ input:checked + .slider:before {
     flex-direction: column;
   }
 }
+
+/* ===== BOOKING HISTORY: Controls Alignment Fix (add at END of App.css) ===== */
+
+.booking-history-page .history-controls{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: nowrap; /* keep one row on desktop */
+}
+
+/* Make search take the remaining space but not become ridiculously wide */
+.booking-history-page .history-controls .search-box{
+  flex: 1;
+  min-width: 320px;
+  max-width: 900px;
+  position: relative;
+  margin: 0; /* prevent inherited margins */
+}
+
+.booking-history-page .history-controls .search-icon{
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray);
+  pointer-events: none;
+}
+
+.booking-history-page .history-controls .search-input{
+  width: 100%;
+  height: 48px;                /* same height as filter buttons */
+  padding: 0 16px 0 44px;      /* left padding for icon */
+  border: 1px solid var(--gray-light);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.booking-history-page .history-controls .filter-buttons{
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: nowrap; /* keep buttons in a row */
+  margin: 0;
+}
+
+.booking-history-page .history-controls .filter-btn{
+  height: 48px;                /* match input height */
+  padding: 0 18px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Responsive: allow wrapping on smaller screens */
+@media (max-width: 900px){
+  .booking-history-page .history-controls{
+    flex-wrap: wrap;
+  }
+
+  .booking-history-page .history-controls .search-box{
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .booking-history-page .history-controls .filter-buttons{
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+/* ===== THEME + HEADER + VALIDATION ENHANCEMENTS ===== */
+.app.theme-light {
+  --bg-main: #f9fafb;
+  --bg-surface: #ffffff;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-main: #e5e7eb;
+}
+
+.app.theme-dark {
+  --bg-main: #0f172a;
+  --bg-surface: #1e293b;
+  --text-main: #e5e7eb;
+  --text-muted: #cbd5e1;
+  --border-main: #334155;
+}
+
+.app {
+  background: var(--bg-main, #f9fafb);
+  color: var(--text-main, #111827);
+}
+
+.theme-dark .main-content,
+.theme-dark .home-page,
+.theme-dark .auth-container,
+.theme-dark .dashboard-page,
+.theme-dark .provider-dashboard,
+.theme-dark .settings-page {
+  color: var(--text-main);
+}
+
+.theme-dark .auth-card,
+.theme-dark .dashboard-section,
+.theme-dark .stat-card,
+.theme-dark .booking-card,
+.theme-dark .booking-item,
+.theme-dark .recommended-item,
+.theme-dark .feature-card,
+.theme-dark .services-preview,
+.theme-dark .dropdown-menu,
+.theme-dark .settings-container,
+.theme-dark .setting-item,
+.theme-dark .job-card,
+.theme-dark .quick-link {
+  background: var(--bg-surface);
+  border-color: var(--border-main);
+  color: var(--text-main);
+}
+
+.theme-dark p,
+.theme-dark .auth-subtitle,
+.theme-dark .booking-meta,
+.theme-dark .service-category,
+.theme-dark .job-date,
+.theme-dark .job-customer,
+.theme-dark .setting-info p {
+  color: var(--text-muted);
+}
+
+.theme-dark .form-control,
+.theme-dark .search-input,
+.theme-dark .home-search-input,
+.theme-dark .setting-select {
+  background: #0b1220;
+  color: var(--text-main);
+  border-color: var(--border-main);
+}
+
+.theme-dark .form-control::placeholder,
+.theme-dark .home-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.theme-dark .header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: var(--border-main);
+}
+
+.theme-dark .nav-link,
+.theme-dark .logo,
+.theme-dark .user-name,
+.theme-dark .dropdown-item,
+.theme-dark .settings-header h1,
+.theme-dark .section-title,
+.theme-dark h2,
+.theme-dark h3,
+.theme-dark h4 {
+  color: var(--text-main);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--border-main, #e5e7eb);
+  background: var(--bg-surface, #fff);
+  color: var(--text-main, #111827);
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-error-message {
+  color: #dc2626;
+  font-size: 0.82rem;
+  margin-top: 0.38rem;
+  margin-bottom: 0.45rem;
+  line-height: 1.3;
+}
+
+.form-error-global {
+  margin-bottom: 1rem;
+}
+
+.invalid-feedback,
+.error-text {
+  color: #dc2626;
+  font-size: 0.82rem;
+  margin-top: 0.38rem;
+  margin-bottom: 0.45rem;
+}
+
+.dashboard-loading,
+.dashboard-empty-message {
+  padding: 0.9rem;
+  border: 1px solid var(--border-main, #e5e7eb);
+  border-radius: 10px;
+  background: var(--bg-surface, #fff);
+}
+
+.dashboard-empty-message p {
+  margin: 0;
+}
+
+.status-in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.provider-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.provider-job-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ===== HOME HERO SEARCH ENHANCEMENTS ===== */
+.home-page {
+  padding-top: 0;
+}
+
+.hero-section {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  border-radius: 0;
+  min-height: 72vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url('https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1800&q=80');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  border: none;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.55));
+}
+
+.hero-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-section .hero-title,
+.hero-section .hero-subtitle,
+.hero-section .hero-description {
+  color: #ffffff;
+}
+
+.home-search-wrapper {
+  max-width: 760px;
+  margin: 1.7rem auto 1rem;
+}
+
+.home-search-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  padding: 1.05rem 1.45rem;
+  font-size: 1.1rem;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.97);
+  color: #0f172a;
+}
+
+.home-search-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.25), 0 14px 40px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    gap: 0.5rem;
+  }
+
+  .theme-toggle-btn span {
+    display: none;
+  }
+
+  .theme-toggle-btn {
+    padding: 0.5rem;
+    border-radius: 10px;
+  }
+
+  .hero-section {
+    min-height: 62vh;
+  }
+
+  .home-search-input {
+    font-size: 1rem;
+    padding: 0.95rem 1.1rem;
+  }
+}
+
+/* Force click-driven profile dropdown visibility */
+.user-menu-wrapper .dropdown-menu {
+  display: none;
+}
+
+.user-menu-wrapper .dropdown-menu.dropdown-open {
+  display: block;
+}
+
+/* ===== DARK THEME HARD OVERRIDES (final) ===== */
+.app.theme-dark {
+  background-color: #0b1220 !important;
+  color: #e5e7eb !important;
+}
+
+.app.theme-dark .header,
+.app.theme-dark .footer,
+.app.theme-dark .main-content,
+.app.theme-dark .auth-container,
+.app.theme-dark .settings-sidebar,
+.app.theme-dark .settings-content {
+  background-color: #0b1220 !important;
+  color: #e5e7eb !important;
+}
+
+/* Surfaces */
+.app.theme-dark .auth-card,
+.app.theme-dark .stat-card,
+.app.theme-dark .dashboard-section,
+.app.theme-dark .feature-card,
+.app.theme-dark .service-card,
+.app.theme-dark .booking-card,
+.app.theme-dark .booking-item,
+.app.theme-dark .recommended-item,
+.app.theme-dark .role-card,
+.app.theme-dark .profile-sidebar,
+.app.theme-dark .profile-content,
+.app.theme-dark .profile-card,
+.app.theme-dark .action-card,
+.app.theme-dark .quick-link,
+.app.theme-dark .job-card,
+.app.theme-dark .payment-method-card,
+.app.theme-dark .settings-container,
+.app.theme-dark .setting-item,
+.app.theme-dark .stat-mini,
+.app.theme-dark .search-box,
+.app.theme-dark .history-controls,
+.app.theme-dark .service-option,
+.app.theme-dark .booking-summary,
+.app.theme-dark .dropdown-menu,
+.app.theme-dark .user-profile-btn {
+  background-color: #111a2b !important;
+  border-color: #2a3a55 !important;
+  color: #e5e7eb !important;
+}
+
+/* Inputs */
+.app.theme-dark .form-control,
+.app.theme-dark .search-input,
+.app.theme-dark .home-search-input,
+.app.theme-dark .setting-select,
+.app.theme-dark textarea,
+.app.theme-dark select,
+.app.theme-dark input {
+  background-color: #0f172a !important;
+  color: #e5e7eb !important;
+  border-color: #334155 !important;
+}
+
+.app.theme-dark .form-control:focus,
+.app.theme-dark .search-input:focus,
+.app.theme-dark .setting-select:focus,
+.app.theme-dark textarea:focus,
+.app.theme-dark select:focus,
+.app.theme-dark input:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
+}
+
+/* Text */
+.app.theme-dark h1,
+.app.theme-dark h2,
+.app.theme-dark h3,
+.app.theme-dark h4,
+.app.theme-dark h5,
+.app.theme-dark h6,
+.app.theme-dark .logo,
+.app.theme-dark .logo-text,
+.app.theme-dark .user-name,
+.app.theme-dark .dropdown-name,
+.app.theme-dark .setting-info h4,
+.app.theme-dark .service-info h4,
+.app.theme-dark .job-info h4,
+.app.theme-dark .action-content h4,
+.app.theme-dark .stat-value,
+.app.theme-dark .stat-number,
+.app.theme-dark .nav-link,
+.app.theme-dark .dropdown-item {
+  color: #e5e7eb !important;
+}
+
+.app.theme-dark p,
+.app.theme-dark .hero-description,
+.app.theme-dark .hero-subtitle,
+.app.theme-dark .user-role,
+.app.theme-dark .dropdown-email,
+.app.theme-dark .setting-info p,
+.app.theme-dark .service-category,
+.app.theme-dark .booking-meta,
+.app.theme-dark .job-date,
+.app.theme-dark .job-customer,
+.app.theme-dark .stat-label,
+.app.theme-dark .auth-subtitle {
+  color: #94a3b8 !important;
+}
+
+/* Dropdown specific */
+.app.theme-dark .dropdown-header {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+}
+
+.app.theme-dark .dropdown-item:hover,
+.app.theme-dark .quick-link:hover,
+.app.theme-dark .action-card:hover,
+.app.theme-dark .booking-item:hover,
+.app.theme-dark .job-card:hover,
+.app.theme-dark .service-option:hover {
+  background-color: #18243a !important;
+  border-color: #3b82f6 !important;
+}
+
+.app.theme-dark .dropdown-divider {
+  background: #2a3a55 !important;
+}
+
+/* Tables */
+.app.theme-dark table,
+.app.theme-dark th,
+.app.theme-dark td {
+  background-color: #111a2b !important;
+  color: #e5e7eb !important;
+  border-color: #2a3a55 !important;
+}
+
+/* keep logout red */
+.app.theme-dark .logout-item,
+.app.theme-dark .logout-item svg {
+  color: #f87171 !important;
+}
+
+.app.theme-dark .logout-item:hover {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}

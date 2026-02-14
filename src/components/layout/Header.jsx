@@ -1,20 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  FaHome, 
-  FaTools, 
-  FaCalendarAlt, 
-  FaHistory, 
-  FaUser, 
+import { useTheme } from '../../context/ThemeContext';
+import {
+  FaHome,
+  FaTools,
+  FaCalendarAlt,
+  FaHistory,
+  FaUser,
   FaSignOutAlt,
   FaChartLine,
   FaCaretDown,
-  FaCog
+  FaMoon,
+  FaSun
 } from 'react-icons/fa';
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -25,222 +28,57 @@ const Header = () => {
         setDropdownOpen(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('servicehubiq_user');
     logout();
-    navigate('/');
     setDropdownOpen(false);
+    navigate('/login', { replace: true });
   };
 
-  const getDashboardPath = () => {
-    switch(user?.role) {
-      case 'customer': return '/dashboard';
-      case 'provider': return '/provider-dashboard';
-      case 'admin': return '/admin-dashboard';
-      default: return '/';
-    }
-  };
-
-  console.log('Header - User exists?', !!user);
-  console.log('Header - User data:', user);
-
-  const styles = {
-    header: {
-      backgroundColor: '#ffffff',
-      borderBottom: '1px solid #e5e7eb',
-      padding: '0.75rem 0',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000,
-    },
-    container: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: '0 1rem',
-    },
-    headerContent: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    logo: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      textDecoration: 'none',
-      fontSize: '1.5rem',
-      fontWeight: '700',
-      color: '#1f2937',
-    },
-    logoImage: {
-      height: '40px', // Adjust height as needed
-      width: 'auto',
-    },
-    nav: {
-      display: 'flex',
-      gap: '1.5rem',
-    },
-    navList: {
-      display: 'flex',
-      listStyle: 'none',
-      margin: 0,
-      padding: 0,
-      gap: '1.5rem',
-      alignItems: 'center',
-    },
-    navLink: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      textDecoration: 'none',
-      color: '#4b5563',
-      padding: '0.5rem',
-      borderRadius: '6px',
-      transition: 'background-color 0.2s',
-    },
-    userMenuWrapper: {
-      position: 'relative',
-    },
-    userProfileBtn: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      padding: '0.5rem 1rem',
-      backgroundColor: '#ffffff',
-      border: '1px solid #e5e7eb',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-    },
-    userAvatar: {
-      width: '36px',
-      height: '36px',
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontWeight: '600',
-      fontSize: '1rem',
-    },
-    userInfo: {
-      textAlign: 'left',
-    },
-    userName: {
-      display: 'block',
-      fontWeight: '600',
-      fontSize: '0.875rem',
-      color: '#1f2937',
-    },
-    userRole: {
-      display: 'block',
-      fontSize: '0.75rem',
-      color: '#6b7280',
-      marginTop: '0.125rem',
-    },
-    dropdownMenu: {
-      position: 'absolute',
-      top: 'calc(100% + 8px)',
-      right: '0',
-      width: '280px',
-      backgroundColor: '#ffffff',
-      border: '1px solid #e5e7eb',
-      borderRadius: '12px',
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-      zIndex: 1000,
-      overflow: 'hidden',
-    },
-    dropdownHeader: {
-      padding: '1.25rem',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-    },
-    dropdownAvatar: {
-      width: '48px',
-      height: '48px',
-      borderRadius: '50%',
-      background: 'rgba(255, 255, 255, 0.2)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '1.25rem',
-      fontWeight: '600',
-    },
-    dropdownDivider: {
-      height: '1px',
-      backgroundColor: '#e5e7eb',
-      margin: '0.5rem 0',
-    },
-    dropdownItem: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      padding: '0.875rem 1.25rem',
-      color: '#4b5563',
-      textDecoration: 'none',
-      backgroundColor: 'transparent',
-      border: 'none',
-      width: '100%',
-      textAlign: 'left',
-      fontSize: '0.875rem',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s',
-    },
-    authButtons: {
-      display: 'flex',
-      gap: '0.5rem',
-    },
-  };
+  const userInitial = user?.name?.charAt(0)?.toUpperCase() || 'U';
 
   return (
-    <header style={styles.header}>
-      <div style={styles.container}>
-        <div style={styles.headerContent}>
-          {/* Logo - Updated to use logo.png */}
-          <Link to="/" style={styles.logo}>
-            <img 
-              src="/logo.png" 
-              alt="ServiceHubIQ Logo" 
-              style={styles.logoImage}
-            />
-            <span>ServiceHubIQ</span>
+    <header className="header">
+      <div className="container">
+        <div className="header-content">
+          <Link to="/" className="logo">
+            <img src="/logo.png" alt="ServiceHubIQ Logo" className="logo-image" />
+            <span className="logo-text">ServiceHubIQ</span>
           </Link>
 
-          {/* Navigation - Show only if user is logged in */}
           {user && (
-            <nav style={styles.nav}>
-              <ul style={styles.navList}>
-                <li>
-                  <Link to="/" style={styles.navLink}>
-                    <FaHome />
+            <nav className="nav">
+              <ul className="nav-list">
+                <li className="nav-item">
+                  <Link to="/" className="nav-link">
+                    <FaHome className="nav-icon" />
                     <span>Home</span>
                   </Link>
                 </li>
 
                 {user.role === 'customer' && (
                   <>
-                    <li>
-                      <Link to="/services" style={styles.navLink}>
-                        <FaTools />
+                    <li className="nav-item">
+                      <Link to="/services" className="nav-link">
+                        <FaTools className="nav-icon" />
                         <span>Services</span>
                       </Link>
                     </li>
-                    <li>
-                      <Link to="/book-service" style={styles.navLink}>
-                        <FaCalendarAlt />
+                    <li className="nav-item">
+                      <Link to="/book-service" className="nav-link">
+                        <FaCalendarAlt className="nav-icon" />
                         <span>Book Service</span>
                       </Link>
                     </li>
-                    <li>
-                      <Link to="/booking-history" style={styles.navLink}>
-                        <FaHistory />
+                    <li className="nav-item">
+                      <Link to="/booking-history" className="nav-link">
+                        <FaHistory className="nav-icon" />
                         <span>History</span>
                       </Link>
                     </li>
@@ -250,107 +88,59 @@ const Header = () => {
             </nav>
           )}
 
-          {/* User Actions */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="header-actions">
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {isDark ? <FaSun /> : <FaMoon />}
+              <span>{isDark ? 'Light' : 'Dark'}</span>
+            </button>
+
             {user ? (
-              <div style={styles.userMenuWrapper} ref={dropdownRef}>
-                <button 
-                  style={styles.userProfileBtn}
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-                >
-                  <div style={styles.userAvatar}>
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
+              <div className="user-menu-wrapper" ref={dropdownRef}>
+                <button type="button" className="user-profile-btn" onClick={() => setDropdownOpen((prev) => !prev)}>
+                  <div className="user-avatar">{userInitial}</div>
+                  <div className="user-info">
+                    <span className="user-name">{user.name || 'User'}</span>
+                    <span className="user-role">{user.role || 'User'}</span>
                   </div>
-                  <div style={styles.userInfo}>
-                    <span style={styles.userName}>
-                      {user.name || 'User'}
-                    </span>
-                    <span style={styles.userRole}>
-                      {user.role === 'customer' ? '👤 Customer' : 
-                       user.role === 'provider' ? '🔧 Provider' : 
-                       '👑 Admin'}
-                    </span>
-                  </div>
-                  <FaCaretDown style={{ 
-                    color: '#9ca3af',
-                    transition: 'transform 0.2s',
-                    transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)'
-                  }} />
+                  <FaCaretDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
                 </button>
 
-                {/* Dropdown Menu */}
-                {dropdownOpen && (
-                  <div style={styles.dropdownMenu}>
-                    <div style={styles.dropdownHeader}>
-                      <div style={styles.dropdownAvatar}>
-                        {user.name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '1.125rem' }}>
-                          {user.name || 'User'}
-                        </div>
-                        <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
-                          {user.email || 'user@example.com'}
-                        </div>
-                      </div>
+                <div className={`dropdown-menu ${dropdownOpen ? 'dropdown-open' : ''}`}>
+                  <div className="dropdown-header">
+                    <div className="dropdown-avatar">{userInitial}</div>
+                    <div>
+                      <div className="dropdown-name">{user.name || 'User'}</div>
+                      <div className="dropdown-email">{user.email || 'user@example.com'}</div>
                     </div>
-                    
-                    <div style={styles.dropdownDivider}></div>
-                    
-                    <Link 
-                      to="/profile" 
-                      style={styles.dropdownItem}
-                      onClick={() => setDropdownOpen(false)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <FaUser style={{ color: '#6b7280' }} />
-                      <span>My Profile</span>
-                    </Link>
-                    
-                    <Link 
-                      to={getDashboardPath()} 
-                      style={styles.dropdownItem}
-                      onClick={() => setDropdownOpen(false)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <FaChartLine style={{ color: '#6b7280' }} />
-                      <span>Dashboard</span>
-                    </Link>
-                    
-                    <Link 
-                      to="/settings" 
-                      style={styles.dropdownItem}
-                      onClick={() => setDropdownOpen(false)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <FaCog style={{ color: '#6b7280' }} />
-                      <span>Settings</span>
-                    </Link>
-                    
-                    <div style={styles.dropdownDivider}></div>
-                    
-                    <button 
-                      style={{
-                        ...styles.dropdownItem,
-                        color: '#dc2626'
-                      }}
-                      onClick={handleLogout}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <FaSignOutAlt style={{ color: '#dc2626' }} />
-                      <span>Logout</span>
-                    </button>
                   </div>
-                )}
+
+                  <div className="dropdown-divider" />
+
+                  <Link to="/dashboard" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <FaChartLine />
+                    <span>Dashboard</span>
+                  </Link>
+
+                  <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <FaUser />
+                    <span>My Profile</span>
+                  </Link>
+
+                  <div className="dropdown-divider" />
+
+                  <button type="button" className="dropdown-item logout-item" onClick={handleLogout}>
+                    <FaSignOutAlt />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
             ) : (
-              <div style={styles.authButtons}>
+              <div className="auth-buttons">
                 <Link to="/login" className="btn btn-primary btn-sm">
                   Login
                 </Link>

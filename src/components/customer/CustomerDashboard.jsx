@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { bookingAPI, extractApiError } from '../../services/api';
 import {
   FaCalendarAlt,
   FaHistory,
@@ -14,73 +15,77 @@ import {
   FaArrowRight
 } from 'react-icons/fa';
 
-const BOOKINGS_KEY = 'servicehubiq_bookings_v1';
+const toUiDate = (iso) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString();
+};
 
-const safeParse = (raw, fallback) => {
-  try {
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
+const toUiTime = (iso) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [bookingError, setBookingError] = useState('');
 
-  // ✅ Keep your notifications (fine for Sprint 1)
   const [notifications] = useState([
-    { id: 1, title: 'Service Confirmed', message: 'Your plumbing service is confirmed for tomorrow', time: '2 hours ago', read: false },
-    { id: 2, title: 'Rating Request', message: 'Rate your recent cleaning service', time: '1 day ago', read: true },
+    { id: 1, title: 'Service Confirmed', message: 'Your booking has been created', time: '2 hours ago', read: false },
+    { id: 2, title: 'Status Update', message: 'Track your booking progress from dashboard', time: '1 day ago', read: true }
   ]);
 
-  // ✅ Real bookings (from localStorage) so demo feels “deep”
-  const bookings = useMemo(() => {
-    const raw = localStorage.getItem(BOOKINGS_KEY);
-    return safeParse(raw, []);
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setLoadingBookings(true);
+        setBookingError('');
+        const response = await bookingAPI.getCustomerBookings();
+        setBookings(response?.data?.data || []);
+      } catch (error) {
+        setBookingError(extractApiError(error, 'Failed to load bookings'));
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
+
+    fetchBookings();
   }, []);
 
-  const upcomingBookings = useMemo(() => {
-    return bookings
-      .filter(b => (b.status || '').toLowerCase() === 'upcoming')
-      .slice(0, 3);
-  }, [bookings]);
-
-  const completedBookings = useMemo(() => {
-    return bookings.filter(b => (b.status || '').toLowerCase() === 'completed');
-  }, [bookings]);
+  const upcomingBookings = useMemo(
+    () => bookings.filter((b) => b.status === 'Pending' || b.status === 'In Progress').slice(0, 3),
+    [bookings]
+  );
 
   const stats = useMemo(() => {
-    const upcoming = bookings.filter(b => (b.status || '').toLowerCase() === 'upcoming').length;
-    const completed = bookings.filter(b => (b.status || '').toLowerCase() === 'completed').length;
+    const pending = bookings.filter((b) => b.status === 'Pending').length;
+    const inProgress = bookings.filter((b) => b.status === 'In Progress').length;
+    const completed = bookings.filter((b) => b.status === 'Completed').length;
 
-    const rated = bookings.filter(b => typeof b.rating === 'number');
-    const avgRating = rated.length
-  ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
-  : '-';
-
-    const totalSpent = bookings
-      .filter(b => (b.status || '').toLowerCase() !== 'cancelled')
-      .reduce((sum, b) => sum + (Number(b.price) || 0), 0);
-
-    return { upcoming, completed, avgRating, totalSpent };
+    return {
+      pending,
+      inProgress,
+      completed,
+      totalSpent: '--'
+    };
   }, [bookings]);
 
-  // ✅ Recommended stays UI-only, but keep ids consistent with your ServiceBooking if possible
   const recommendedServices = [
     { id: 1, name: 'Emergency Plumbing Service', category: 'Plumbing', price: 89, rating: 4.8 },
     { id: 2, name: 'Complete Home Cleaning', category: 'Cleaning', price: 129, rating: 4.9 },
-    { id: 3, name: 'Electrical Installation', category: 'Electrical', price: 149, rating: 4.7 },
+    { id: 3, name: 'Electrical Installation', category: 'Electrical', price: 149, rating: 4.7 }
   ];
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="dashboard-page">
-      {/* Welcome Section */}
       <div className="dashboard-welcome">
         <div className="welcome-content">
-          <h1>Welcome back, {user?.name || 'Customer'}! 👋</h1>
-          {/* <p>Checkpoint 1 Demo: Customer flow end-to-end (Register → Login → Book → History)</p> */}
+          <h1>Welcome back, {user?.name || 'Customer'}!</h1>
         </div>
         <div className="welcome-actions">
           <button className="btn btn-outline" type="button">
@@ -90,15 +95,26 @@ const CustomerDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {bookingError && <p className="form-error-message">{bookingError}</p>}
+
       <div className="dashboard-stats">
         <div className="stat-card">
           <div className="stat-icon booking">
             <FaCalendarAlt />
           </div>
           <div className="stat-content">
-            <h3>{stats.upcoming}</h3>
-            <p>Upcoming Bookings</p>
+            <h3>{stats.pending}</h3>
+            <p>Pending Bookings</p>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon">
+            <FaClock />
+          </div>
+          <div className="stat-content">
+            <h3>{stats.inProgress}</h3>
+            <p>In Progress</p>
           </div>
         </div>
 
@@ -113,34 +129,23 @@ const CustomerDashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">
-            <FaStar />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.avgRating}</h3>
-            <p>Average Rating</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
           <div className="stat-icon earning">
             <FaCreditCard />
           </div>
           <div className="stat-content">
-            <h3>${stats.totalSpent}</h3>
+            <h3>{stats.totalSpent}</h3>
             <p>Total Spent</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="dashboard-content-grid">
-        {/* Left Column */}
         <div className="dashboard-left">
-          {/* Quick Actions */}
           <div className="dashboard-section">
             <div className="section-header">
-              <h2><FaTools /> Quick Actions</h2>
+              <h2>
+                <FaTools /> Quick Actions
+              </h2>
               <Link to="/services" className="btn-text">
                 View All <FaArrowRight />
               </Link>
@@ -173,12 +178,11 @@ const CustomerDashboard = () => {
                 </div>
                 <div className="action-content">
                   <h4>Service History</h4>
-                  <p>View bookings and cancel upcoming</p>
+                  <p>View booking progress</p>
                 </div>
               </Link>
 
-              {/* ✅ Keep the card, but prevent broken routing during demo */}
-              <button className="action-card" type="button" style={{ textAlign: 'left' }} disabled>
+              <button className="action-card" type="button" disabled>
                 <div className="action-icon warning">
                   <FaUserFriends />
                 </div>
@@ -194,7 +198,7 @@ const CustomerDashboard = () => {
                 </div>
                 <div className="action-content">
                   <h4>Settings</h4>
-                  <p>Notifications & preferences</p>
+                  <p>Notifications and preferences</p>
                 </div>
               </Link>
 
@@ -210,30 +214,36 @@ const CustomerDashboard = () => {
             </div>
           </div>
 
-          {/* Upcoming Bookings */}
           <div className="dashboard-section">
             <div className="section-header">
-              <h2><FaClock /> Upcoming Bookings</h2>
+              <h2>
+                <FaClock /> Recent Bookings
+              </h2>
               <Link to="/booking-history" className="btn-text">
                 View All
               </Link>
             </div>
 
-            {upcomingBookings.length > 0 ? (
+            {loadingBookings ? (
+              <div className="dashboard-loading">Loading bookings...</div>
+            ) : upcomingBookings.length > 0 ? (
               <div className="bookings-list">
-                {upcomingBookings.map(booking => (
-                  <div key={booking.id} className="booking-item">
+                {upcomingBookings.map((booking) => (
+                  <div key={booking._id} className="booking-item">
                     <div className="booking-info">
-                      <h4>{booking.service}</h4>
-                      <p className="booking-meta">{booking.provider}</p>
+                      <h4>{booking.serviceType}</h4>
+                      <p className="booking-meta">{booking.providerId?.name || 'Assigned Provider'}</p>
                       <p className="booking-time">
-                        <FaCalendarAlt /> {booking.date} at {booking.time}
+                        <FaCalendarAlt /> {toUiDate(booking.date)} at {toUiTime(booking.date)}
                       </p>
                     </div>
                     <div className="booking-status">
-                      <span className="status-badge status-confirmed">upcoming</span>
+                      <span className={`status-badge ${
+                        booking.status === 'Pending' ? 'status-pending' : booking.status === 'In Progress' ? 'status-in-progress' : 'status-completed'
+                      }`}>
+                        {booking.status}
+                      </span>
 
-                      {/* ✅ No broken “Details” route in checkpoint demo */}
                       <Link to="/booking-history" className="btn btn-outline btn-xs">
                         View
                       </Link>
@@ -242,22 +252,22 @@ const CustomerDashboard = () => {
                 ))}
               </div>
             ) : (
-              <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8 }}>
-                <p style={{ margin: 0 }}>
-                  No upcoming bookings yet. Go to <Link to="/services">Services</Link> and book one for the demo.
+              <div className="dashboard-empty-message">
+                <p>
+                  No active bookings yet. Go to <Link to="/services">Services</Link> and create one.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="dashboard-right">
-          {/* Recommended Services */}
           <div className="dashboard-section">
-            <h2><FaStar /> Recommended For You</h2>
+            <h2>
+              <FaStar /> Recommended For You
+            </h2>
             <div className="recommended-list">
-              {recommendedServices.map(service => (
+              {recommendedServices.map((service) => (
                 <div key={service.id} className="recommended-item">
                   <div className="service-info">
                     <h4>{service.name}</h4>
@@ -277,26 +287,23 @@ const CustomerDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Stats (UI-only; safe for demo) */}
           <div className="dashboard-section">
-            <h2><FaChartLine /> Quick Stats</h2>
+            <h2>
+              <FaChartLine /> Quick Stats
+            </h2>
             <div className="stats-mini">
               <div className="stat-mini">
-                <div className="stat-label">Avg Response Time</div>
-                <div className="stat-value">45 min</div>
+                <div className="stat-label">Pending</div>
+                <div className="stat-value">{stats.pending}</div>
               </div>
               <div className="stat-mini">
-                <div className="stat-label">Saved Providers</div>
-                <div className="stat-value">3</div>
+                <div className="stat-label">In Progress</div>
+                <div className="stat-value">{stats.inProgress}</div>
               </div>
               <div className="stat-mini">
-                <div className="stat-label">This Month</div>
-                <div className="stat-value">$285</div>
+                <div className="stat-label">Completed</div>
+                <div className="stat-value">{stats.completed}</div>
               </div>
-            </div>
-
-            <div style={{ marginTop: 10, fontSize: 12, color: '#6b7280' }}>
-              Note: Quick Stats are demo placeholders (Sprint 2 will connect to backend analytics).
             </div>
           </div>
         </div>
