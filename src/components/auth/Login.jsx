@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
 import { EMAIL_REGEX } from '../../utils/validation';
 import ErrorMessage from '../shared/ErrorMessage';
-import { FaEnvelope, FaLock, FaUser, FaTools } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaUser, FaTools, FaGoogle } from 'react-icons/fa';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -110,11 +110,11 @@ const Login = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
+      <div className="auth-card auth-card-login">
         <h2 className="auth-title">Welcome Back</h2>
         <p className="auth-subtitle">Sign in to ServiceHubIQ</p>
 
-        <form onSubmit={handleSubmit} className="auth-form" noValidate>
+        <form onSubmit={handleSubmit} className="auth-form auth-form-login" noValidate>
           <ErrorMessage message={errors.general} className="form-error-global" />
 
           <div className="form-group">
@@ -187,13 +187,21 @@ const Login = () => {
             <ErrorMessage message={errors.role} />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+          <div className="auth-actions">
+            <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
 
-          <button type="button" className="btn btn-outline btn-block" onClick={handleGoogleLogin} disabled={loading}>
-            Continue with Google
-          </button>
+            <button
+              type="button"
+              className="btn btn-outline btn-block google-signin-btn"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+            >
+              <FaGoogle />
+              <span>Continue with Google</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>

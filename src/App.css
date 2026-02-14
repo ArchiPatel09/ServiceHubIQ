@@ -5227,3 +5227,748 @@ input:checked + .slider:before {
 .app.theme-dark .logout-item:hover {
   background-color: rgba(220, 38, 38, 0.15) !important;
 }
+
+/* ===== SIGN-IN SPACING FIX ===== */
+.auth-card-login {
+  max-width: 520px;
+  padding: 2.4rem 2.2rem;
+}
+
+.auth-form-login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.auth-form-login .form-group {
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-group .input-icon {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.input-group .form-control {
+  padding-left: 2.6rem;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.google-signin-btn {
+  margin-top: 0;
+}
+
+/* ===== SERVICES SEARCH/FILTER ALIGNMENT ===== */
+.service-browser .browser-controls {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.25fr) minmax(380px, 1fr);
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.service-browser .services-search-box,
+.service-browser .services-filters {
+  min-height: 56px;
+}
+
+.service-browser .services-search-box .search-input {
+  height: 56px;
+  border-radius: 14px;
+}
+
+.service-browser .services-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.service-browser .filter-group {
+  min-height: 56px;
+  border-radius: 14px;
+  padding: 0 0.9rem;
+}
+
+.service-browser .filter-select {
+  width: 100%;
+  height: 100%;
+}
+
+.service-browser .services-clear-btn {
+  min-height: 56px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+/* ===== FINAL DARK THEME LEAK FIXES ===== */
+.app.theme-dark .browser-header,
+.app.theme-dark .browser-header h2,
+.app.theme-dark .browser-header p,
+.app.theme-dark .history-header,
+.app.theme-dark .history-header h1,
+.app.theme-dark .history-header p,
+.app.theme-dark .settings-header,
+.app.theme-dark .settings-header h1,
+.app.theme-dark .settings-header p,
+.app.theme-dark .profile-header,
+.app.theme-dark .profile-header h1,
+.app.theme-dark .profile-header p {
+  color: #e2e8f0 !important;
+}
+
+.app.theme-dark .settings-sidebar,
+.app.theme-dark .settings-nav-item,
+.app.theme-dark .theme-option,
+.app.theme-dark .payment-method-card,
+.app.theme-dark .privacy-note,
+.app.theme-dark .provider-note,
+.app.theme-dark .search-input,
+.app.theme-dark .filter-group,
+.app.theme-dark .filter-select,
+.app.theme-dark .dropdown-menu,
+.app.theme-dark .dropdown-item,
+.app.theme-dark .dropdown-header,
+.app.theme-dark .user-profile-btn,
+.app.theme-dark .no-results,
+.app.theme-dark .services-stats .stat-card,
+.app.theme-dark .service-card-header,
+.app.theme-dark .service-card-body,
+.app.theme-dark .service-card-footer {
+  background-color: #101b2d !important;
+  color: #e2e8f0 !important;
+  border-color: #2b3f5d !important;
+}
+
+.app.theme-dark .filter-icon,
+.app.theme-dark .search-icon,
+.app.theme-dark .dropdown-item svg,
+.app.theme-dark .settings-nav-item svg {
+  color: #94a3b8 !important;
+}
+
+.app.theme-dark .settings-nav-item:hover,
+.app.theme-dark .dropdown-item:hover,
+.app.theme-dark .theme-option:hover,
+.app.theme-dark .service-card:hover,
+.app.theme-dark .booking-card:hover,
+.app.theme-dark .quick-link:hover {
+  background-color: #17263d !important;
+  border-color: #3b82f6 !important;
+}
+
+.app.theme-dark .settings-nav-item.active {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+.app.theme-dark .switch .slider {
+  background-color: #334155 !important;
+}
+
+.app.theme-dark input:checked + .slider {
+  background-color: #2563eb !important;
+}
+
+.app.theme-dark .privacy-note,
+.app.theme-dark .provider-note {
+  border-color: #334155 !important;
+}
+
+.app.theme-dark .privacy-note h4,
+.app.theme-dark .provider-note h4,
+.app.theme-dark .privacy-note p,
+.app.theme-dark .provider-note p {
+  color: #cbd5e1 !important;
+}
+
+.app.theme-dark .user-profile-btn:hover {
+  background-color: #17263d !important;
+}
+
+@media (max-width: 1024px) {
+  .service-browser .browser-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .service-browser .services-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-card-login {
+    padding: 1.6rem 1.1rem;
+  }
+
+  .service-browser .services-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .service-browser .filter-group,
+  .service-browser .services-clear-btn,
+  .service-browser .services-search-box .search-input {
+    min-height: 50px;
+    height: 50px;
+  }
+}
+
+/* ===== DARK THEME POLISH (login/services/book-service) ===== */
+.app.theme-dark {
+  --dark-bg: #0b1220;
+  --dark-surface: #121c2f;
+  --dark-surface-2: #17243b;
+  --dark-border: #2f4263;
+  --dark-text: #e6edf7;
+  --dark-muted: #a9b8cf;
+  --dark-primary: #4f8dff;
+  --dark-success: #22c55e;
+}
+
+.app.theme-dark .main-content,
+.app.theme-dark .service-browser,
+.app.theme-dark .service-booking-page,
+.app.theme-dark .auth-container {
+  background: var(--dark-bg) !important;
+  color: var(--dark-text) !important;
+}
+
+/* Login page */
+.app.theme-dark .auth-container {
+  background-image: radial-gradient(circle at 20% 20%, rgba(79, 141, 255, 0.16), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(34, 197, 94, 0.1), transparent 40%),
+    linear-gradient(180deg, #0b1220 0%, #0b1220 100%) !important;
+}
+
+.app.theme-dark .auth-card,
+.app.theme-dark .auth-card-login {
+  background: var(--dark-surface) !important;
+  border: 1px solid var(--dark-border) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+.app.theme-dark .auth-title,
+.app.theme-dark .auth-subtitle,
+.app.theme-dark .form-group label,
+.app.theme-dark .role-option label {
+  color: var(--dark-text) !important;
+}
+
+.app.theme-dark .role-option {
+  background: #0f172a !important;
+  border-color: var(--dark-border) !important;
+}
+
+.app.theme-dark .role-option.selected {
+  background: rgba(79, 141, 255, 0.16) !important;
+  border-color: var(--dark-primary) !important;
+}
+
+.app.theme-dark .role-option input[type='radio'] {
+  accent-color: var(--dark-primary);
+}
+
+/* Services page */
+.app.theme-dark .browser-header h2,
+.app.theme-dark .browser-header p,
+.app.theme-dark .section-title {
+  color: var(--dark-text) !important;
+}
+
+.app.theme-dark .search-input,
+.app.theme-dark .filter-group,
+.app.theme-dark .filter-select {
+  background: var(--dark-surface) !important;
+  border-color: var(--dark-border) !important;
+  color: var(--dark-text) !important;
+}
+
+.app.theme-dark .search-input::placeholder,
+.app.theme-dark .filter-select option {
+  color: var(--dark-muted) !important;
+}
+
+.app.theme-dark .service-card {
+  background: var(--dark-surface) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.app.theme-dark .service-card-header {
+  background: var(--dark-surface-2) !important;
+  border-bottom-color: var(--dark-border) !important;
+}
+
+.app.theme-dark .service-name,
+.app.theme-dark .service-category,
+.app.theme-dark .service-provider,
+.app.theme-dark .service-location,
+.app.theme-dark .rating-text,
+.app.theme-dark .price-unit {
+  color: var(--dark-text) !important;
+}
+
+.app.theme-dark .service-description,
+.app.theme-dark .service-provider strong {
+  color: var(--dark-muted) !important;
+}
+
+.app.theme-dark .service-price .price-amount {
+  color: #8bb4ff !important;
+}
+
+.app.theme-dark .service-availability,
+.app.theme-dark .available-icon {
+  color: var(--dark-success) !important;
+}
+
+/* Book service page */
+.app.theme-dark .booking-container {
+  background: transparent !important;
+}
+
+.app.theme-dark .booking-step,
+.app.theme-dark .booking-summary,
+.app.theme-dark .service-option,
+.app.theme-dark .time-slot {
+  background: var(--dark-surface) !important;
+  border-color: var(--dark-border) !important;
+  color: var(--dark-text) !important;
+}
+
+.app.theme-dark .booking-step h2,
+.app.theme-dark .summary-item,
+.app.theme-dark .summary-total,
+.app.theme-dark .service-option h4,
+.app.theme-dark .service-option .price,
+.app.theme-dark .service-option .description {
+  color: var(--dark-text) !important;
+}
+
+.app.theme-dark .time-slot:hover,
+.app.theme-dark .service-option:hover {
+  background: var(--dark-surface-2) !important;
+}
+
+.app.theme-dark .time-slot.selected,
+.app.theme-dark .service-option.selected {
+  background: rgba(79, 141, 255, 0.2) !important;
+  border-color: var(--dark-primary) !important;
+}
+
+.app.theme-dark input[type='date'] {
+  color-scheme: dark;
+}
+
+/* Footer polish */
+.app.theme-dark .footer,
+.app.theme-dark footer {
+  background: linear-gradient(180deg, #111b2d 0%, #0e1727 100%) !important;
+  border-top-color: var(--dark-border) !important;
+}
+
+.app.theme-dark .footer p,
+.app.theme-dark .footer a,
+.app.theme-dark .footer h4,
+.app.theme-dark footer p,
+.app.theme-dark footer a,
+.app.theme-dark footer h4 {
+  color: #c3d0e2 !important;
+}
+
+/* ===== GLOBAL DARK THEME UNIFICATION (all pages) ===== */
+.app.theme-dark,
+.app.theme-dark .main-content,
+.app.theme-dark .home-page,
+.app.theme-dark .services-page,
+.app.theme-dark .service-browser,
+.app.theme-dark .service-booking-page,
+.app.theme-dark .booking-history-page,
+.app.theme-dark .dashboard-page,
+.app.theme-dark .provider-dashboard,
+.app.theme-dark .admin-dashboard,
+.app.theme-dark .profile-page,
+.app.theme-dark .settings-page,
+.app.theme-dark .not-found {
+  background-color: #0a1426 !important;
+  color: #e5edf8 !important;
+}
+
+/* Unified surfaces */
+.app.theme-dark .auth-card,
+.app.theme-dark .role-card,
+.app.theme-dark .service-card,
+.app.theme-dark .service-card-header,
+.app.theme-dark .service-card-body,
+.app.theme-dark .service-card-footer,
+.app.theme-dark .booking-card,
+.app.theme-dark .booking-item,
+.app.theme-dark .booking-step,
+.app.theme-dark .booking-summary,
+.app.theme-dark .service-option,
+.app.theme-dark .time-slot,
+.app.theme-dark .dashboard-section,
+.app.theme-dark .stat-card,
+.app.theme-dark .history-stats .stat-item,
+.app.theme-dark .settings-container,
+.app.theme-dark .settings-sidebar,
+.app.theme-dark .settings-content,
+.app.theme-dark .setting-item,
+.app.theme-dark .profile-sidebar,
+.app.theme-dark .profile-content,
+.app.theme-dark .profile-card,
+.app.theme-dark .quick-link,
+.app.theme-dark .action-card,
+.app.theme-dark .job-card,
+.app.theme-dark .rating-card,
+.app.theme-dark .payment-method-card,
+.app.theme-dark .dropdown-menu,
+.app.theme-dark .user-profile-btn,
+.app.theme-dark .search-box,
+.app.theme-dark .filter-group,
+.app.theme-dark .no-results,
+.app.theme-dark .theme-option,
+.app.theme-dark .tab-content,
+.app.theme-dark .card,
+.app.theme-dark .modal-content {
+  background-color: #121f36 !important;
+  border-color: #2f456a !important;
+  color: #e5edf8 !important;
+}
+
+/* Inputs and controls */
+.app.theme-dark .form-control,
+.app.theme-dark .search-input,
+.app.theme-dark .filter-select,
+.app.theme-dark .setting-select,
+.app.theme-dark input,
+.app.theme-dark select,
+.app.theme-dark textarea {
+  background-color: #0f1a2f !important;
+  border-color: #35507a !important;
+  color: #e5edf8 !important;
+}
+
+.app.theme-dark input::placeholder,
+.app.theme-dark textarea::placeholder,
+.app.theme-dark .search-input::placeholder {
+  color: #9db0cd !important;
+}
+
+/* Text hierarchy */
+.app.theme-dark h1,
+.app.theme-dark h2,
+.app.theme-dark h3,
+.app.theme-dark h4,
+.app.theme-dark h5,
+.app.theme-dark h6,
+.app.theme-dark .service-name,
+.app.theme-dark .user-name,
+.app.theme-dark .dropdown-name,
+.app.theme-dark .stat-number,
+.app.theme-dark .stat-value,
+.app.theme-dark .summary-total,
+.app.theme-dark .nav-link,
+.app.theme-dark .dropdown-item,
+.app.theme-dark .filter-btn {
+  color: #eaf2ff !important;
+}
+
+.app.theme-dark p,
+.app.theme-dark .auth-subtitle,
+.app.theme-dark .booking-meta,
+.app.theme-dark .service-description,
+.app.theme-dark .service-provider,
+.app.theme-dark .service-category,
+.app.theme-dark .job-date,
+.app.theme-dark .job-customer,
+.app.theme-dark .dropdown-email,
+.app.theme-dark .user-role,
+.app.theme-dark .stat-label,
+.app.theme-dark .history-header p,
+.app.theme-dark .section-subtitle {
+  color: #9db0cd !important;
+}
+
+/* Booking history filter pills + search row */
+.app.theme-dark .booking-history-page .history-controls {
+  background: transparent !important;
+}
+
+.app.theme-dark .booking-history-page .filter-btn {
+  background-color: #172843 !important;
+  border: 1px solid #33517e !important;
+  color: #dbe9ff !important;
+}
+
+.app.theme-dark .booking-history-page .filter-btn.active,
+.app.theme-dark .booking-history-page .filter-btn:hover {
+  background-color: #2f6eea !important;
+  border-color: #4f8dff !important;
+  color: #ffffff !important;
+}
+
+/* Dropdown and nav active states */
+.app.theme-dark .dropdown-item:hover,
+.app.theme-dark .quick-link:hover,
+.app.theme-dark .action-card:hover,
+.app.theme-dark .service-card:hover,
+.app.theme-dark .booking-card:hover,
+.app.theme-dark .job-card:hover,
+.app.theme-dark .theme-option:hover,
+.app.theme-dark .nav-link:hover,
+.app.theme-dark .nav-link.active {
+  background-color: #1b2d4a !important;
+  border-color: #4f8dff !important;
+}
+
+/* Keep semantic accents */
+.app.theme-dark .service-availability,
+.app.theme-dark .available-icon,
+.app.theme-dark .status-success {
+  color: #22c55e !important;
+}
+
+.app.theme-dark .logout-item,
+.app.theme-dark .logout-item svg {
+  color: #f87171 !important;
+}
+
+/* ===== SERVICES CONTROLS ALIGNMENT REFINEMENT ===== */
+.service-browser .browser-controls {
+  grid-template-columns: minmax(520px, 1.45fr) minmax(420px, 1fr) !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.service-browser .services-search-box {
+  margin: 0 !important;
+}
+
+.service-browser .services-search-box .search-input,
+.service-browser .services-filters .filter-group,
+.service-browser .services-filters .services-clear-btn {
+  height: 58px !important;
+}
+
+.service-browser .services-filters {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr auto !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+.service-browser .services-filters .filter-group {
+  padding: 0 0.9rem !important;
+}
+
+.service-browser .services-filters .filter-select {
+  min-width: 0;
+}
+
+/* ===== BOOK SERVICE DARK THEME FIX ===== */
+.app.theme-dark .service-booking-page {
+  background: #091224 !important;
+  color: #e8effa !important;
+}
+
+.app.theme-dark .booking-header h1 {
+  color: #eaf2ff !important;
+}
+
+.app.theme-dark .booking-steps .step-label {
+  color: #9fb2cf !important;
+}
+
+.app.theme-dark .booking-steps .step-number {
+  background: #14233b !important;
+  color: #dbe8ff !important;
+  border-color: #35507a !important;
+}
+
+.app.theme-dark .booking-steps .step.active .step-number {
+  background: #2f6eea !important;
+  border-color: #4f8dff !important;
+  color: #ffffff !important;
+}
+
+.app.theme-dark .booking-step,
+.app.theme-dark .booking-summary,
+.app.theme-dark .service-option,
+.app.theme-dark .time-slot,
+.app.theme-dark .booking-content,
+.app.theme-dark .booking-container {
+  background: #121f36 !important;
+  border-color: #2f456a !important;
+  color: #e8effa !important;
+}
+
+.app.theme-dark .booking-step h2,
+.app.theme-dark .summary-item,
+.app.theme-dark .summary-total,
+.app.theme-dark .service-option h4,
+.app.theme-dark .service-option .price,
+.app.theme-dark .service-option .description,
+.app.theme-dark .booking-actions,
+.app.theme-dark .booking-step label {
+  color: #e8effa !important;
+}
+
+.app.theme-dark .service-option:hover,
+.app.theme-dark .time-slot:hover {
+  background: #1a2d4b !important;
+}
+
+.app.theme-dark .service-option.selected,
+.app.theme-dark .time-slot.selected {
+  background: rgba(79, 141, 255, 0.22) !important;
+  border-color: #4f8dff !important;
+}
+
+.app.theme-dark .booking-step .form-control,
+.app.theme-dark .booking-step textarea,
+.app.theme-dark .booking-step input[type='date'] {
+  background: #0f1a2f !important;
+  border-color: #35507a !important;
+  color: #e8effa !important;
+}
+
+.app.theme-dark .booking-step input[type='date'] {
+  color-scheme: dark;
+}
+
+/* ===== BOOKING HISTORY REVIEW UI ===== */
+.booking-card .booking-actions {
+  margin-top: 0.75rem;
+}
+
+.booking-review {
+  margin-top: 0.7rem;
+  font-size: 0.94rem;
+  color: #475569;
+}
+
+.review-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.review-modal {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  padding: 1.25rem;
+}
+
+.review-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.review-modal-header h3 {
+  margin: 0;
+}
+
+.review-modal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+}
+
+.review-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.app.theme-dark .booking-review {
+  color: #9fb2cf !important;
+}
+
+.app.theme-dark .review-modal {
+  background: #121f36 !important;
+  border-color: #2f456a !important;
+}
+
+.app.theme-dark .review-modal h3,
+.app.theme-dark .review-modal label {
+  color: #e8effa !important;
+}
+
+.app.theme-dark .review-modal .form-control {
+  background: #0f1a2f !important;
+  border-color: #35507a !important;
+  color: #e8effa !important;
+}
+
+.app.theme-dark .review-modal-close {
+  background: #0f1a2f !important;
+  border-color: #35507a !important;
+  color: #e8effa !important;
+}
+
+@media (max-width: 1100px) {
+  .service-browser .browser-controls {
+    grid-template-columns: 1fr !important;
+  }
+
+  .service-browser .services-filters {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .service-browser .services-filters {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Remove dark block behind booking header area */
+.app.theme-dark .booking-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Inline no-provider error above confirm button */
+.provider-availability-error {
+  color: #dc2626;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.app.theme-dark .provider-availability-error {
+  color: #f87171;
+}

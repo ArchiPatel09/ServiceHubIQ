@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ServiceCard from '../shared/ServiceCard';
-import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo, FaCheckCircle } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo } from 'react-icons/fa';
 
 const ServiceBrowser = () => {
   const navigate = useNavigate();
@@ -36,60 +36,61 @@ const ServiceBrowser = () => {
     'Halifax, NS'
   ];
 
-  // ✅ Mock data for Sprint 1 demo
-  const mockServices = useMemo(() => ([
-    {
-      id: 1,
-      name: 'Emergency Plumbing Service',
-      category: 'Plumbing',
-      description: '24/7 emergency plumbing services for leaks, clogs, and repairs',
-      price: 89,
-      rating: 4.8,
-      reviews: 124,
-      provider: 'ProFix Plumbing',
-      location: 'Toronto, ON',
-      available: true
-    },
-    {
-      id: 2,
-      name: 'Complete Home Cleaning',
-      category: 'Cleaning',
-      description: 'Professional deep cleaning for homes and apartments',
-      price: 129,
-      rating: 4.9,
-      reviews: 256,
-      provider: 'Sparkle Clean',
-      location: 'Vancouver, BC',
-      available: true
-    },
-    {
-      id: 3,
-      name: 'Electrical Installation',
-      category: 'Electrical',
-      description: 'Safe and certified electrical installations and repairs',
-      price: 149,
-      rating: 4.7,
-      reviews: 89,
-      provider: 'SafeWatt Electric',
-      location: 'Montreal, QC',
-      available: true
-    },
-    {
-      id: 4,
-      name: 'Snow Removal Service',
-      category: 'Snow Removal',
-      description: 'Residential and commercial snow clearing',
-      price: 49,
-      rating: 4.6,
-      reviews: 187,
-      provider: 'SnowClear Pro',
-      location: 'Calgary, AB',
-      available: true
-    }
-  ]), []);
+  const mockServices = useMemo(
+    () => [
+      {
+        id: 1,
+        name: 'Emergency Plumbing Service',
+        category: 'Plumbing',
+        description: '24/7 emergency plumbing services for leaks, clogs, and repairs',
+        price: 89,
+        rating: 4.8,
+        reviews: 124,
+        provider: 'ProFix Plumbing',
+        location: 'Toronto, ON',
+        available: true
+      },
+      {
+        id: 2,
+        name: 'Complete Home Cleaning',
+        category: 'Cleaning',
+        description: 'Professional deep cleaning for homes and apartments',
+        price: 129,
+        rating: 4.9,
+        reviews: 256,
+        provider: 'Sparkle Clean',
+        location: 'Vancouver, BC',
+        available: true
+      },
+      {
+        id: 3,
+        name: 'Electrical Installation',
+        category: 'Electrical',
+        description: 'Safe and certified electrical installations and repairs',
+        price: 149,
+        rating: 4.7,
+        reviews: 89,
+        provider: 'SafeWatt Electric',
+        location: 'Montreal, QC',
+        available: true
+      },
+      {
+        id: 4,
+        name: 'Snow Removal Service',
+        category: 'Snow Removal',
+        description: 'Residential and commercial snow clearing',
+        price: 49,
+        rating: 4.6,
+        reviews: 187,
+        provider: 'SnowClear Pro',
+        location: 'Calgary, AB',
+        available: true
+      }
+    ],
+    []
+  );
 
   useEffect(() => {
-    // Simulate API call (Sprint 1)
     setServices(mockServices);
     setFilteredServices(mockServices);
   }, [mockServices]);
@@ -99,30 +100,26 @@ const ServiceBrowser = () => {
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(service =>
-        service.name.toLowerCase().includes(term) ||
-        service.category.toLowerCase().includes(term) ||
-        service.description.toLowerCase().includes(term) ||
-        service.provider.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (service) =>
+          service.name.toLowerCase().includes(term) ||
+          service.category.toLowerCase().includes(term) ||
+          service.description.toLowerCase().includes(term) ||
+          service.provider.toLowerCase().includes(term)
       );
     }
 
     if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter(service =>
-        service.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
+      filtered = filtered.filter((service) => service.category.toLowerCase() === selectedCategory.toLowerCase());
     }
 
     if (selectedLocation) {
-      filtered = filtered.filter(service =>
-        service.location.toLowerCase().includes(selectedLocation.toLowerCase())
-      );
+      filtered = filtered.filter((service) => service.location.toLowerCase().includes(selectedLocation.toLowerCase()));
     }
 
     setFilteredServices(filtered);
   }, [searchTerm, selectedCategory, selectedLocation, services]);
 
-  // ✅ IMPORTANT: useNavigate instead of window.location.href (no reload, safer demo)
   const handleBookService = (serviceId) => {
     navigate(`/book-service?service=${serviceId}`);
   };
@@ -133,40 +130,17 @@ const ServiceBrowser = () => {
     setSelectedLocation('');
   };
 
-  const activeFiltersCount =
-    (searchTerm.trim() ? 1 : 0) +
-    (selectedCategory !== 'all' ? 1 : 0) +
-    (selectedLocation ? 1 : 0);
+  const activeFiltersCount = (searchTerm.trim() ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0) + (selectedLocation ? 1 : 0);
 
   return (
     <div className="service-browser">
       <div className="browser-header">
         <h2>Find Professional Services</h2>
         <p>Browse and book verified service professionals across Canada</p>
-
-        {/* ✅ Presentation-ready badge (shows scope is intentional) */}
-        <div style={{ marginTop: 10 }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 10px',
-              borderRadius: 999,
-              background: '#f0fdf4',
-              color: '#166534',
-              fontSize: 13
-            }}
-          >
-            {/* <FaCheckCircle />
-            Sprint 1 Demo: Browse → Book → View History */}
-          </span>
-        </div>
       </div>
 
-      {/* Filters & Search */}
       <div className="browser-controls">
-        <div className="search-box">
+        <div className="search-box services-search-box">
           <FaSearch className="search-icon" />
           <input
             type="text"
@@ -177,7 +151,7 @@ const ServiceBrowser = () => {
           />
         </div>
 
-        <div className="filters">
+        <div className="filters services-filters">
           <div className="filter-group">
             <FaFilter className="filter-icon" />
             <select
@@ -209,15 +183,8 @@ const ServiceBrowser = () => {
             </select>
           </div>
 
-          {/* ✅ Clear filters button appears only when filters are active */}
           {activeFiltersCount > 0 && (
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={clearFilters}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-              title="Clear filters"
-            >
+            <button type="button" className="btn btn-outline services-clear-btn" onClick={clearFilters} title="Clear filters">
               <FaUndo />
               Clear ({activeFiltersCount})
             </button>
@@ -225,15 +192,10 @@ const ServiceBrowser = () => {
         </div>
       </div>
 
-      {/* Services Grid */}
       {filteredServices.length > 0 ? (
         <div className="services-grid">
           {filteredServices.map((service) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              onBook={() => handleBookService(service.id)}
-            />
+            <ServiceCard key={service.id} service={service} onBook={() => handleBookService(service.id)} />
           ))}
         </div>
       ) : (
@@ -246,7 +208,6 @@ const ServiceBrowser = () => {
         </div>
       )}
 
-      {/* Services Stats */}
       <div className="services-stats">
         <div className="stat-card">
           <h4>{services.length}+</h4>

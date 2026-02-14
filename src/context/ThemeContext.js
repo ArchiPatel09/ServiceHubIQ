@@ -3,18 +3,30 @@
 const ThemeContext = createContext({});
 const THEME_STORAGE_KEY = 'servicehubiq_theme';
 
-export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light');
-
-  useEffect(() => {
+const getInitialTheme = () => {
+  try {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     if (savedTheme === 'light' || savedTheme === 'dark') {
-      setTheme(savedTheme);
+      return savedTheme;
     }
-  }, []);
+  } catch {
+    // ignore storage access failures
+  }
+  return 'light';
+};
+
+export const ThemeProvider = ({ children }) => {
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore storage access failures
+    }
+
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.classList.toggle('theme-dark-body', theme === 'dark');
   }, [theme]);
 
   const toggleTheme = () => {

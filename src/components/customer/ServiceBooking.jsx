@@ -23,6 +23,7 @@ const ServiceBooking = () => {
   const [providers, setProviders] = useState([]);
   const [loadingProviders, setLoadingProviders] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [providerAvailabilityError, setProviderAvailabilityError] = useState('');
 
   const services = useMemo(
     () => [
@@ -77,18 +78,21 @@ const ServiceBooking = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setBookingData((prev) => ({ ...prev, [name]: value }));
+    setProviderAvailabilityError('');
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (errors.general) setErrors((prev) => ({ ...prev, general: '' }));
   };
 
   const handleServiceSelect = (serviceId) => {
     setBookingData((prev) => ({ ...prev, serviceId }));
+    setProviderAvailabilityError('');
     setErrors((prev) => ({ ...prev, serviceId: '' }));
     setStep(2);
   };
 
   const handleTimeSelect = (time) => {
     setBookingData((prev) => ({ ...prev, serviceTime: time }));
+    setProviderAvailabilityError('');
     setErrors((prev) => ({ ...prev, serviceTime: '' }));
     setStep(4);
   };
@@ -143,12 +147,13 @@ const ServiceBooking = () => {
 
     const providerId = resolveProviderId(svc.key);
     if (!providerId) {
-      setErrors({ general: 'No providers available. Register a provider first and try again.' });
+      setProviderAvailabilityError('No provider available for this service right now. Please try again later.');
       return;
     }
 
     try {
       setSubmitting(true);
+      setProviderAvailabilityError('');
       const dateTime = `${bookingData.serviceDate}T${timeTo24Hour(bookingData.serviceTime)}`;
 
       const response = await bookingAPI.createBooking({
@@ -264,6 +269,10 @@ const ServiceBooking = () => {
                 <label>Special Instructions</label>
                 <textarea name="specialInstructions" value={bookingData.specialInstructions} onChange={handleInputChange} className="form-control" placeholder="Any special instructions for the provider" rows="3" />
               </div>
+
+              {providerAvailabilityError && (
+                <p className="provider-availability-error">{providerAvailabilityError}</p>
+              )}
 
               <div className="booking-actions">
                 <button className="btn btn-outline" onClick={() => setStep(3)} type="button">Back</button>
