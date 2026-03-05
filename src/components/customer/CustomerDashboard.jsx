@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { bookingAPI, extractApiError } from '../../services/api';
+import { formatServicePrice, getServicePrice } from '../../utils/servicePricing';
 import {
   FaCalendarAlt,
   FaHistory,
@@ -64,12 +65,13 @@ const CustomerDashboard = () => {
     const pending = bookings.filter((b) => b.status === 'Pending').length;
     const inProgress = bookings.filter((b) => b.status === 'In Progress').length;
     const completed = bookings.filter((b) => b.status === 'Completed').length;
+    const totalSpent = bookings.reduce((sum, booking) => sum + (getServicePrice(booking.serviceType, booking.price) || 0), 0);
 
     return {
       pending,
       inProgress,
       completed,
-      totalSpent: '--'
+      totalSpent: `$${totalSpent}`
     };
   }, [bookings]);
 
@@ -188,7 +190,7 @@ const CustomerDashboard = () => {
                 </div>
                 <div className="action-content">
                   <h4>My Providers</h4>
-                  <p>Coming in Sprint 2</p>
+                  <p>Coming in Sprint 3</p>
                 </div>
               </button>
 
@@ -236,6 +238,7 @@ const CustomerDashboard = () => {
                       <p className="booking-time">
                         <FaCalendarAlt /> {toUiDate(booking.date)} at {toUiTime(booking.date)}
                       </p>
+                      <p className="booking-meta">Price: {formatServicePrice(booking.serviceType, booking.price)}</p>
                     </div>
                     <div className="booking-status">
                       <span className={`status-badge ${

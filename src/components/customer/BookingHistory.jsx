@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { FaSearch, FaStar, FaCalendarAlt, FaTools, FaTimes } from 'react-icons/fa';
 import { bookingAPI, extractApiError } from '../../services/api';
+import { formatServicePrice } from '../../utils/servicePricing';
 
 const REVIEWS_STORAGE_KEY = 'servicehubiq_reviews';
 
@@ -62,7 +63,7 @@ const BookingHistory = () => {
             time: formatTime(booking.date),
             status: statusToUi(booking.status),
             rawStatus: booking.status,
-            price: '-',
+            price: formatServicePrice(booking.serviceType, booking.price),
             rating: saved?.rating ?? null,
             review: saved?.review ?? null
           };

@@ -2,6 +2,7 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaTools, FaReceipt } from 'react-icons/fa';
 import { bookingAPI, extractApiError } from '../../services/api';
+import { formatServicePrice } from '../../utils/servicePricing';
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
@@ -50,7 +51,8 @@ const BookingConfirmation = () => {
       date: dateObj ? dateObj.toLocaleDateString() : '-',
       time: dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
       address: booking.address,
-      status: booking.status
+      status: booking.status,
+      price: formatServicePrice(booking.serviceType, booking.price)
     };
   }, [booking]);
 
@@ -114,6 +116,7 @@ const BookingConfirmation = () => {
           <div className="summary-item"><strong><FaCalendarAlt /> Date:</strong> {formatted.date}</div>
           <div className="summary-item"><strong><FaClock /> Time:</strong> {formatted.time}</div>
           <div className="summary-item"><strong><FaMapMarkerAlt /> Address:</strong> {formatted.address || '-'}</div>
+          <div className="summary-item"><strong>Price:</strong> {formatted.price}</div>
           <div className="summary-item"><strong>Status:</strong> {formatted.status}</div>
         </div>
 

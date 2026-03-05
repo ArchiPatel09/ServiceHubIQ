@@ -34,7 +34,6 @@ const formatDate = (isoOrDateString) => {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 };
 
-const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
 const isValidPhone = (phone) => {
   if (!phone) return true; // optional
   const digits = phone.replace(/[^\d]/g, '');
@@ -102,8 +101,6 @@ const Profile = () => {
   const validate = () => {
     const e = {};
     if (!formData.name.trim()) e.name = 'Name is required.';
-    if (!formData.email.trim()) e.email = 'Email is required.';
-    else if (!isValidEmail(formData.email)) e.email = 'Please enter a valid email.';
     if (!isValidPhone(formData.phone)) e.phone = 'Phone should be 10–15 digits.';
     return e;
   };
@@ -144,7 +141,13 @@ const Profile = () => {
       setStatus({ type: '', msg: '' });
 
       if (typeof updateProfile === 'function') {
-        const maybePromise = updateProfile(formData);
+        const safeUpdates = {
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          bio: formData.bio
+        };
+        const maybePromise = updateProfile(safeUpdates);
         if (maybePromise?.then) await maybePromise;
       }
 
@@ -197,7 +200,7 @@ const Profile = () => {
           </div>
 
           {}
-          <div className="account-info" style={{ marginTop: 16 }}>
+          <div className="account-info profile-booking-summary">
             <h4>My Booking Summary</h4>
 
             <div className="info-item">
@@ -216,15 +219,15 @@ const Profile = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <div className="profile-booking-links">
               <Link className="btn btn-outline btn-sm" to="/services">Browse Services</Link>
               <Link className="btn btn-primary btn-sm" to="/booking-history">View History</Link>
             </div>
 
             {bookingStats.last && (
-              <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: '#f8fafc' }}>
+              <div className="profile-last-booking">
                 <strong>Last Booking:</strong>
-                <div style={{ fontSize: 14 }}>
+                <div className="profile-last-booking-meta">
                   {bookingStats.last.service} — {bookingStats.last.date} at {bookingStats.last.time}
                 </div>
               </div>
@@ -287,12 +290,11 @@ const Profile = () => {
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleChange}
-                    className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                    disabled={!isEditing || saving}
-                    required
+                    className="form-control"
+                    disabled
+                    readOnly
                   />
-                  {errors.email && <div className="error-text">{errors.email}</div>}
+                  <small className="profile-preference-note">Email cannot be changed.</small>
                 </div>
 
                 <div className="form-group">
@@ -385,7 +387,7 @@ const Profile = () => {
               </div>
             </div>
 
-            <div style={{ marginTop: 12, fontSize: 13, color: '#6b7280' }}>
+            <div className="profile-preference-note">
               Note: Preferences are UI-only for Sprint 1 (safe for checkpoint demo).
             </div>
           </div>
