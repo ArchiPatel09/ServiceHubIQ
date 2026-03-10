@@ -50,12 +50,11 @@ const Footer = () => {
           <div className="footer-section">
             <h4 className="footer-title">Our Services</h4>
             <ul className="footer-links">
+              <li>Deep Cleaning</li>
               <li>Plumbing</li>
-              <li>Electrical Work</li>
-              <li>Cleaning</li>
+              <li>Electrician</li>
+              <li>Gardener</li>
               <li>Snow Removal</li>
-              <li>Painting</li>
-              <li>Appliance Repair</li>
             </ul>
           </div>
 

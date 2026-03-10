@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { bookingAPI, extractApiError } from '../../services/api';
 import { formatServicePrice, getServicePrice } from '../../utils/servicePricing';
+import { SERVICE_LABELS } from '../../services/constants';
 import {
   FaCalendarAlt,
   FaHistory,
@@ -76,10 +77,15 @@ const CustomerDashboard = () => {
   }, [bookings]);
 
   const recommendedServices = [
-    { id: 1, name: 'Emergency Plumbing Service', category: 'Plumbing', price: 89, rating: 4.8 },
-    { id: 2, name: 'Complete Home Cleaning', category: 'Cleaning', price: 129, rating: 4.9 },
-    { id: 3, name: 'Electrical Installation', category: 'Electrical', price: 149, rating: 4.7 }
-  ];
+    { id: 'plumbing', rating: 4.8 },
+    { id: 'deep_cleaning', rating: 4.9 },
+    { id: 'electrician', rating: 4.7 }
+  ].map((service) => ({
+    ...service,
+    name: SERVICE_LABELS[service.id] || service.id,
+    category: SERVICE_LABELS[service.id] || service.id,
+    price: getServicePrice(service.id) || 0
+  }));
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -230,29 +236,32 @@ const CustomerDashboard = () => {
               <div className="dashboard-loading">Loading bookings...</div>
             ) : upcomingBookings.length > 0 ? (
               <div className="bookings-list">
-                {upcomingBookings.map((booking) => (
-                  <div key={booking._id} className="booking-item">
-                    <div className="booking-info">
-                      <h4>{booking.serviceType}</h4>
-                      <p className="booking-meta">{booking.providerId?.name || 'Assigned Provider'}</p>
-                      <p className="booking-time">
-                        <FaCalendarAlt /> {toUiDate(booking.date)} at {toUiTime(booking.date)}
-                      </p>
-                      <p className="booking-meta">Price: {formatServicePrice(booking.serviceType, booking.price)}</p>
-                    </div>
-                    <div className="booking-status">
-                      <span className={`status-badge ${
-                        booking.status === 'Pending' ? 'status-pending' : booking.status === 'In Progress' ? 'status-in-progress' : 'status-completed'
-                      }`}>
-                        {booking.status}
-                      </span>
+                {upcomingBookings.map((booking) => {
+                  const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
+                  return (
+                    <div key={booking._id} className="booking-item">
+                      <div className="booking-info">
+                        <h4>{serviceLabel}</h4>
+                        <p className="booking-meta">{booking.providerId?.name || 'Assigned Provider'}</p>
+                        <p className="booking-time">
+                          <FaCalendarAlt /> {toUiDate(booking.date)} at {toUiTime(booking.date)}
+                        </p>
+                        <p className="booking-meta">Price: {formatServicePrice(booking.serviceType, booking.price)}</p>
+                      </div>
+                      <div className="booking-status">
+                        <span className={`status-badge ${
+                          booking.status === 'Pending' ? 'status-pending' : booking.status === 'In Progress' ? 'status-in-progress' : 'status-completed'
+                        }`}>
+                          {booking.status}
+                        </span>
 
-                      <Link to="/booking-history" className="btn btn-outline btn-xs">
-                        View
-                      </Link>
+                        <Link to="/booking-history" className="btn btn-outline btn-xs">
+                          View
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="dashboard-empty-message">

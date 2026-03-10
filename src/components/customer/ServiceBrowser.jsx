@@ -1,127 +1,84 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ServiceCard from '../shared/ServiceCard';
 import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo } from 'react-icons/fa';
+import { userAPI } from '../../services/api';
+import { SERVICES, SERVICE_LABELS, CANADIAN_CITIES } from '../../services/constants';
+import { getServicePrice } from '../../utils/servicePricing';
 
 const ServiceBrowser = () => {
   const navigate = useNavigate();
 
-  const [services, setServices] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const categories = [
-    'All Services',
-    'Plumbing',
-    'Electrical',
-    'Cleaning',
-    'Snow Removal',
-    'Painting',
-    'Appliance Repair',
-    'Gardening',
-    'Carpentry',
-    'HVAC'
-  ];
+  const categories = ['All Services', ...SERVICES.map((s) => SERVICE_LABELS[s.id])];
+  const locations = CANADIAN_CITIES;
 
-  const locations = [
-    'Toronto, ON',
-    'Vancouver, BC',
-    'Montreal, QC',
-    'Calgary, AB',
-    'Ottawa, ON',
-    'Edmonton, AB',
-    'Winnipeg, MB',
-    'Halifax, NS'
-  ];
-
-  const mockServices = useMemo(
-    () => [
-      {
-        id: 1,
-        name: 'Emergency Plumbing Service',
-        category: 'Plumbing',
-        description: '24/7 emergency plumbing services for leaks, clogs, and repairs',
-        price: 89,
-        rating: 4.8,
-        reviews: 124,
-        provider: 'ProFix Plumbing',
-        location: 'Toronto, ON',
-        available: true
-      },
-      {
-        id: 2,
-        name: 'Complete Home Cleaning',
-        category: 'Cleaning',
-        description: 'Professional deep cleaning for homes and apartments',
-        price: 129,
-        rating: 4.9,
-        reviews: 256,
-        provider: 'Sparkle Clean',
-        location: 'Vancouver, BC',
-        available: true
-      },
-      {
-        id: 3,
-        name: 'Electrical Installation',
-        category: 'Electrical',
-        description: 'Safe and certified electrical installations and repairs',
-        price: 149,
-        rating: 4.7,
-        reviews: 89,
-        provider: 'SafeWatt Electric',
-        location: 'Montreal, QC',
-        available: true
-      },
-      {
-        id: 4,
-        name: 'Snow Removal Service',
-        category: 'Snow Removal',
-        description: 'Residential and commercial snow clearing',
-        price: 49,
-        rating: 4.6,
-        reviews: 187,
-        provider: 'SnowClear Pro',
-        location: 'Calgary, AB',
-        available: true
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const serviceParam = selectedCategory === 'all' ? undefined : Object.keys(SERVICE_LABELS).find(
+          (key) => SERVICE_LABELS[key] === selectedCategory
+        );
+        const response = await userAPI.getProviders(serviceParam, selectedLocation || undefined);
+        setProviders(response?.data?.data || []);
+      } catch (err) {
+        setError('Failed to load providers');
+        setProviders([]);
+      } finally {
+        setLoading(false);
       }
-    ],
-    []
-  );
+    };
+
+    loadProviders();
+  }, [selectedCategory, selectedLocation]);
 
   useEffect(() => {
-    setServices(mockServices);
-    setFilteredServices(mockServices);
-  }, [mockServices]);
+    const term = searchTerm.trim().toLowerCase();
+    const mapped = providers.map((provider) => {
+      const serviceId = provider.provider_service || provider.providerService;
+      const serviceLabel = SERVICE_LABELS[serviceId] || 'Service';
+      const price = getServicePrice(serviceId);
 
-  useEffect(() => {
-    let filtered = services;
+      return {
+        id: provider._id,
+        serviceKey: serviceId,
+        name: `${serviceLabel} Service`,
+        category: serviceLabel,
+        description: `Provided by ${provider.name}`,
+        price: price || 0,
+        rating: provider.rating || 0,
+        reviews: provider.reviews || 0,
+        provider: provider.name,
+        location: provider.address || 'Location not set',
+        available: true
+      };
+    });
 
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (service) =>
-          service.name.toLowerCase().includes(term) ||
-          service.category.toLowerCase().includes(term) ||
-          service.description.toLowerCase().includes(term) ||
-          service.provider.toLowerCase().includes(term)
+    const filtered = mapped.filter((service) => {
+      if (!term) return true;
+      return (
+        service.name.toLowerCase().includes(term) ||
+        service.category.toLowerCase().includes(term) ||
+        service.description.toLowerCase().includes(term) ||
+        service.provider.toLowerCase().includes(term) ||
+        service.location.toLowerCase().includes(term)
       );
-    }
-
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter((service) => service.category.toLowerCase() === selectedCategory.toLowerCase());
-    }
-
-    if (selectedLocation) {
-      filtered = filtered.filter((service) => service.location.toLowerCase().includes(selectedLocation.toLowerCase()));
-    }
+    });
 
     setFilteredServices(filtered);
-  }, [searchTerm, selectedCategory, selectedLocation, services]);
+  }, [providers, searchTerm]);
 
-  const handleBookService = (serviceId) => {
-    navigate(`/book-service?service=${serviceId}`);
+  const handleBookService = (serviceKey) => {
+    navigate(`/book-service?service=${serviceKey}`);
   };
 
   const clearFilters = () => {
@@ -130,7 +87,8 @@ const ServiceBrowser = () => {
     setSelectedLocation('');
   };
 
-  const activeFiltersCount = (searchTerm.trim() ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0) + (selectedLocation ? 1 : 0);
+  const activeFiltersCount =
+    (searchTerm.trim() ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0) + (selectedLocation ? 1 : 0);
 
   return (
     <div className="service-browser">
@@ -144,7 +102,7 @@ const ServiceBrowser = () => {
           <FaSearch className="search-icon" />
           <input
             type="text"
-            placeholder="Search services, categories, providers..."
+            placeholder="Search services, providers, locations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -192,10 +150,16 @@ const ServiceBrowser = () => {
         </div>
       </div>
 
-      {filteredServices.length > 0 ? (
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      {loading ? (
+        <div className="empty-history">
+          <h3>Loading services...</h3>
+        </div>
+      ) : filteredServices.length > 0 ? (
         <div className="services-grid">
           {filteredServices.map((service) => (
-            <ServiceCard key={service.id} service={service} onBook={() => handleBookService(service.id)} />
+            <ServiceCard key={service.id} service={service} onBook={() => handleBookService(service.serviceKey)} />
           ))}
         </div>
       ) : (
@@ -207,25 +171,6 @@ const ServiceBrowser = () => {
           </button>
         </div>
       )}
-
-      <div className="services-stats">
-        <div className="stat-card">
-          <h4>{services.length}+</h4>
-          <p>Services Available</p>
-        </div>
-        <div className="stat-card">
-          <h4>4.8+</h4>
-          <p>Average Rating</p>
-        </div>
-        <div className="stat-card">
-          <h4>50+</h4>
-          <p>Cities Covered</p>
-        </div>
-        <div className="stat-card">
-          <h4>24/7</h4>
-          <p>Support Availability</p>
-        </div>
-      </div>
     </div>
   );
 };

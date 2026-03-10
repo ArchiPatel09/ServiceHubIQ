@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AddressAutocomplete from './AddressAutocomplete';
+import { SERVICE_LABELS } from '../../services/constants';
 import {
   FaUser,
   FaEnvelope,
@@ -28,23 +30,24 @@ const safeParse = (raw, fallback) => {
 };
 
 const formatDate = (isoOrDateString) => {
-  if (!isoOrDateString) return '—';
+  if (!isoOrDateString) return '-';
   const d = new Date(isoOrDateString);
   if (Number.isNaN(d.getTime())) return isoOrDateString;
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 };
 
 const isValidPhone = (phone) => {
-  if (!phone) return true; // optional
-  const digits = phone.replace(/[^\d]/g, '');
+  if (!phone) return true;
+  const digits = String(phone).replace(/[^\d]/g, '');
   return digits.length >= 10 && digits.length <= 15;
 };
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
+  const isProvider = user?.role === 'provider';
 
   const [isEditing, setIsEditing] = useState(false);
-  const [status, setStatus] = useState({ type: '', msg: '' }); 
+  const [status, setStatus] = useState({ type: '', msg: '' });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -64,7 +67,7 @@ const Profile = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     address: user?.address || '',
-    bio: user?.bio || ''
+    profile_image: user?.profile_image || ''
   });
 
   useEffect(() => {
@@ -73,19 +76,17 @@ const Profile = () => {
       email: user?.email || '',
       phone: user?.phone || '',
       address: user?.address || '',
-      bio: user?.bio || ''
+      profile_image: user?.profile_image || ''
     });
   }, [user]);
 
   const bookingStats = useMemo(() => {
     const raw = localStorage.getItem(BOOKINGS_KEY_FALLBACK);
     const bookings = safeParse(raw, []);
-    const upcoming = bookings.filter(b => (b.status || '').toLowerCase() === 'upcoming').length;
-    const completed = bookings.filter(b => (b.status || '').toLowerCase() === 'completed').length;
-    const cancelled = bookings.filter(b => (b.status || '').toLowerCase() === 'cancelled').length;
-
-    const last = bookings[0] || null; 
-    return { upcoming, completed, cancelled, last };
+    const upcoming = bookings.filter((b) => (b.status || '').toLowerCase() === 'upcoming').length;
+    const completed = bookings.filter((b) => (b.status || '').toLowerCase() === 'completed').length;
+    const last = bookings[0] || null;
+    return { upcoming, completed, last };
   }, []);
 
   const accountInfo = [
@@ -101,16 +102,21 @@ const Profile = () => {
   const validate = () => {
     const e = {};
     if (!formData.name.trim()) e.name = 'Name is required.';
-    if (!isValidPhone(formData.phone)) e.phone = 'Phone should be 10–15 digits.';
+    if (!isValidPhone(formData.phone)) e.phone = 'Phone should be 10-15 digits.';
     return e;
   };
 
   const handleChange = (evt) => {
     const { name, value } = evt.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (status.msg) setStatus({ type: '', msg: '' });
+  };
+
+  const handleAddressSelect = (address) => {
+    setFormData((prev) => ({ ...prev, address }));
+    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
   };
 
   const handleCancel = () => {
@@ -122,7 +128,7 @@ const Profile = () => {
       email: user?.email || '',
       phone: user?.phone || '',
       address: user?.address || '',
-      bio: user?.bio || ''
+      profile_image: user?.profile_image || ''
     });
   };
 
@@ -141,13 +147,12 @@ const Profile = () => {
       setStatus({ type: '', msg: '' });
 
       if (typeof updateProfile === 'function') {
-        const safeUpdates = {
+        const maybePromise = updateProfile({
           name: formData.name,
           phone: formData.phone,
           address: formData.address,
-          bio: formData.bio
-        };
-        const maybePromise = updateProfile(safeUpdates);
+          profile_image: formData.profile_image
+        });
         if (maybePromise?.then) await maybePromise;
       }
 
@@ -163,6 +168,10 @@ const Profile = () => {
     }
   };
 
+  const providerServiceLabel = isProvider
+    ? SERVICE_LABELS[user?.provider_service || user?.providerService || ''] || 'Not set'
+    : null;
+
   return (
     <div className="profile-page">
       <div className="profile-header">
@@ -171,12 +180,9 @@ const Profile = () => {
       </div>
 
       <div className="profile-container">
-        { }
         <div className="profile-sidebar">
           <div className="profile-avatar">
-            <div className="avatar-circle">
-              {user?.name?.charAt(0) || 'U'}
-            </div>
+            <div className="avatar-circle">{user?.name?.charAt(0) || 'U'}</div>
             <h3>{user?.name || 'User'}</h3>
             <p className="user-email">{user?.email}</p>
             {user?.role && (
@@ -197,12 +203,19 @@ const Profile = () => {
                 </div>
               </div>
             ))}
+            {isProvider && (
+              <div className="info-item">
+                <div className="info-icon"><FaTools /></div>
+                <div>
+                  <div className="info-label">Service</div>
+                  <div className="info-value">{providerServiceLabel}</div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {}
           <div className="account-info profile-booking-summary">
             <h4>My Booking Summary</h4>
-
             <div className="info-item">
               <div className="info-icon"><FaHistory /></div>
               <div>
@@ -210,7 +223,6 @@ const Profile = () => {
                 <div className="info-value">{bookingStats.upcoming}</div>
               </div>
             </div>
-
             <div className="info-item">
               <div className="info-icon"><FaTools /></div>
               <div>
@@ -218,30 +230,25 @@ const Profile = () => {
                 <div className="info-value">{bookingStats.completed}</div>
               </div>
             </div>
-
             <div className="profile-booking-links">
               <Link className="btn btn-outline btn-sm" to="/services">Browse Services</Link>
               <Link className="btn btn-primary btn-sm" to="/booking-history">View History</Link>
             </div>
-
             {bookingStats.last && (
               <div className="profile-last-booking">
                 <strong>Last Booking:</strong>
                 <div className="profile-last-booking-meta">
-                  {bookingStats.last.service} — {bookingStats.last.date} at {bookingStats.last.time}
+                  {bookingStats.last.service} - {bookingStats.last.date} at {bookingStats.last.time}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {}
         <div className="profile-content">
           <div className="profile-card">
             <div className="card-header">
               <h2>Personal Information</h2>
-
-              {}
               {!isEditing ? (
                 <button className="btn btn-outline" onClick={() => setIsEditing(true)}>
                   <FaEdit /> Edit Profile
@@ -253,23 +260,16 @@ const Profile = () => {
               )}
             </div>
 
-            {}
             {status.msg && (
-              <div
-                className={`alert ${status.type === 'success' ? 'alert-success' : 'alert-danger'}`}
-                style={{ marginTop: 12 }}
-              >
-                {status.type === 'success' ? <FaCheckCircle /> : <FaExclamationTriangle />}{' '}
-                {status.msg}
+              <div className={`alert ${status.type === 'success' ? 'alert-success' : 'alert-danger'}`} style={{ marginTop: 12 }}>
+                {status.type === 'success' ? <FaCheckCircle /> : <FaExclamationTriangle />} {status.msg}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="profile-form">
               <div className="form-grid">
                 <div className="form-group">
-                  <label>
-                    <FaUser className="input-icon" /> Full Name
-                  </label>
+                  <label><FaUser className="input-icon" /> Full Name</label>
                   <input
                     type="text"
                     name="name"
@@ -283,24 +283,13 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    <FaEnvelope className="input-icon" /> Email Address
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    className="form-control"
-                    disabled
-                    readOnly
-                  />
+                  <label><FaEnvelope className="input-icon" /> Email Address</label>
+                  <input type="email" name="email" value={formData.email} className="form-control" disabled readOnly />
                   <small className="profile-preference-note">Email cannot be changed.</small>
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    <FaPhone className="input-icon" /> Phone Number
-                  </label>
+                  <label><FaPhone className="input-icon" /> Phone Number</label>
                   <input
                     type="tel"
                     name="phone"
@@ -314,35 +303,32 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    <FaMapMarkerAlt className="input-icon" /> Address
-                  </label>
-                  <textarea
+                  <label><FaMapMarkerAlt className="input-icon" /> Address</label>
+                  <AddressAutocomplete
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
+                    onSelect={handleAddressSelect}
                     className="form-control"
-                    rows="3"
                     disabled={!isEditing || saving}
                     placeholder="(optional)"
                   />
                 </div>
 
                 <div className="form-group full-width">
-                  <label>Bio / About Me</label>
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
+                  <label>Profile Image URL</label>
+                  <input
+                    type="text"
+                    name="profile_image"
+                    value={formData.profile_image}
                     onChange={handleChange}
                     className="form-control"
-                    rows="4"
                     disabled={!isEditing || saving}
-                    placeholder="Tell us a little about yourself..."
+                    placeholder="https://..."
                   />
                 </div>
               </div>
 
-              {}
               {isEditing && (
                 <div className="form-actions">
                   <button type="submit" className="btn btn-primary" disabled={saving}>
@@ -354,42 +340,6 @@ const Profile = () => {
                 </div>
               )}
             </form>
-          </div>
-
-          <div className="profile-card">
-            <h2>Preferences</h2>
-            <div className="preferences">
-              <div className="preference-item">
-                <h4>Email Notifications</h4>
-                <p>Receive updates about your bookings and promotions</p>
-                <label className="switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="preference-item">
-                <h4>SMS Notifications</h4>
-                <p>Get service reminders via SMS</p>
-                <label className="switch">
-                  <input type="checkbox" />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="preference-item">
-                <h4>Marketing Communications</h4>
-                <p>Receive newsletters and promotional offers</p>
-                <label className="switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div className="profile-preference-note">
-              Note: Preferences are UI-only for Sprint 1 (safe for checkpoint demo).
-            </div>
           </div>
         </div>
       </div>

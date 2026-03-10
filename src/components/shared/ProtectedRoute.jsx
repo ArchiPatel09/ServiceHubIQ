@@ -16,22 +16,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   }
 
   if (!user) {
-    // Redirect to login, but save the attempted URL to return to after login
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    // Redirect to appropriate dashboard based on role
-    switch(user.role) {
-      case 'customer':
-        return <Navigate to="/dashboard" replace />;
-      case 'provider':
-        return <Navigate to="/provider-dashboard" replace />;
-      case 'admin':
-        return <Navigate to="/admin-dashboard" replace />;
-      default:
-        return <Navigate to="/" replace />;
+    if (user.role === 'provider') {
+      return <Navigate to="/provider-dashboard" replace />;
     }
+    return <Navigate to="/customer-dashboard" replace />;
   }
 
   return children;

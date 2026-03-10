@@ -2294,6 +2294,9 @@ p {
 }
 
 .star-rating .star {
+  background: transparent;
+  border: none;
+  padding: 0;
   font-size: 2rem;
   color: var(--gray-light);
   cursor: pointer;
@@ -2302,6 +2305,10 @@ p {
 
 .star-rating .star.filled {
   color: var(--warning);
+}
+
+.star-rating .star:disabled {
+  cursor: default;
 }
 
 .review-input {
@@ -6333,4 +6340,43 @@ input:checked + .slider:before {
   .dashboard-stats .stat-card {
     min-width: 0 !important;
   }
+}
+
+/* ===== STATIC PAGES (About/Contact/Privacy/Terms) ===== */
+.static-page {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0 3rem;
+}
+
+.static-page-card {
+  width: 100%;
+  max-width: 860px;
+  background: white;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 2.25rem;
+}
+
+.static-page-subtitle {
+  margin-top: -0.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--gray);
+}
+
+.static-page-text {
+  color: var(--dark-light);
+  margin-bottom: 1rem;
+}
+
+.app.theme-dark .static-page-card {
+  background: #121f36 !important;
+  border-color: #2f456a !important;
+  color: #e8effa !important;
+}
+
+.app.theme-dark .static-page-subtitle,
+.app.theme-dark .static-page-text {
+  color: #9fb2cf !important;
 }

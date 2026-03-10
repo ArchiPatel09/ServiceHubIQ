@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -121,7 +121,11 @@ const Header = () => {
 
                   <div className="dropdown-divider" />
 
-                  <Link to="/dashboard" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                  <Link
+                    to={user.role === 'provider' ? '/provider-dashboard' : '/customer-dashboard'}
+                    className="dropdown-item"
+                    onClick={() => setDropdownOpen(false)}
+                  >
                     <FaChartLine />
                     <span>Dashboard</span>
                   </Link>

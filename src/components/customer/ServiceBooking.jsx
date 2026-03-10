@@ -1,16 +1,9 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCalendar, FaClock, FaHome, FaMapMarkerAlt, FaCreditCard, FaCheckCircle } from 'react-icons/fa';
 import { bookingAPI, extractApiError, userAPI } from '../../services/api';
-
-const SERVICE_TO_PROFESSION = {
-  plumbing: 'plumber',
-  cleaning: 'cleaner',
-  electrical: 'electrician',
-  snow_removal: 'gardener',
-  painting: 'painter',
-  appliance_repair: 'technician'
-};
+import { SERVICES, SERVICE_LABELS, TIME_SLOTS } from '../../services/constants';
+import { getServicePrice } from '../../utils/servicePricing';
 
 const ServiceBooking = () => {
   const navigate = useNavigate();
@@ -26,18 +19,18 @@ const ServiceBooking = () => {
   const [providerAvailabilityError, setProviderAvailabilityError] = useState('');
 
   const services = useMemo(
-    () => [
-      { id: 1, key: 'plumbing', name: 'Emergency Plumbing Service', provider: 'Provider assigned', price: 89 },
-      { id: 2, key: 'cleaning', name: 'Complete Home Cleaning', provider: 'Provider assigned', price: 129 },
-      { id: 3, key: 'electrical', name: 'Electrical Installation', provider: 'Provider assigned', price: 149 },
-      { id: 4, key: 'snow_removal', name: 'Snow Removal Service', provider: 'Provider assigned', price: 49 },
-      { id: 5, key: 'painting', name: 'Painting', provider: 'Provider assigned', price: 199 },
-      { id: 6, key: 'appliance_repair', name: 'Appliance Repair', provider: 'Provider assigned', price: 79 }
-    ],
+    () =>
+      SERVICES.map((service) => ({
+        id: service.id,
+        key: service.id,
+        name: SERVICE_LABELS[service.id],
+        provider: 'Provider assigned',
+        price: getServicePrice(service.id) || 0
+      })),
     []
   );
 
-  const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+  const timeSlots = TIME_SLOTS;
 
   const [bookingData, setBookingData] = useState({
     serviceId: null,
@@ -48,7 +41,10 @@ const ServiceBooking = () => {
     paymentMethod: 'credit_card'
   });
 
-  const selectedService = useMemo(() => services.find((s) => s.id === bookingData.serviceId) || null, [services, bookingData.serviceId]);
+  const selectedService = useMemo(
+    () => services.find((s) => s.id === bookingData.serviceId) || null,
+    [services, bookingData.serviceId]
+  );
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -67,10 +63,9 @@ const ServiceBooking = () => {
 
   useEffect(() => {
     if (!preselectedService) return;
-    const idNum = Number(preselectedService);
-    const exists = services.some((s) => s.id === idNum);
+    const exists = services.some((s) => s.id === preselectedService);
     if (exists) {
-      setBookingData((prev) => ({ ...prev, serviceId: idNum }));
+      setBookingData((prev) => ({ ...prev, serviceId: preselectedService }));
       setStep(2);
     }
   }, [preselectedService, services]);
@@ -121,14 +116,22 @@ const ServiceBooking = () => {
     return `${hours.padStart(2, '0')}:${minutes}:00`;
   };
 
+  const normalizeRole = (value) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+
   const resolveProviderId = (serviceKey) => {
     if (!providers.length) return null;
 
-    const desired = SERVICE_TO_PROFESSION[serviceKey];
-    if (!desired) return providers[0]._id;
+    const desired = normalizeRole(serviceKey);
+    const match = providers.find((p) => {
+      const providerService = normalizeRole(p.provider_service || p.providerService);
+      return providerService === desired;
+    });
 
-    const match = providers.find((p) => (p.profession || '').toLowerCase().includes(desired.toLowerCase()));
-    return (match || providers[0])._id;
+    return match ? match._id : null;
   };
 
   const handleSubmitBooking = async () => {
@@ -158,9 +161,11 @@ const ServiceBooking = () => {
 
       const response = await bookingAPI.createBooking({
         providerId,
-        serviceType: svc.name,
+        serviceType: svc.key,
         address: bookingData.address,
-        date: dateTime
+        date: dateTime,
+        time: bookingData.serviceTime,
+        details: bookingData.specialInstructions
       });
 
       const created = response?.data?.data;

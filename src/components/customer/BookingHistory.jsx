@@ -1,9 +1,8 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FaSearch, FaStar, FaCalendarAlt, FaTools, FaTimes } from 'react-icons/fa';
 import { bookingAPI, extractApiError } from '../../services/api';
 import { formatServicePrice } from '../../utils/servicePricing';
-
-const REVIEWS_STORAGE_KEY = 'servicehubiq_reviews';
+import { SERVICE_LABELS } from '../../services/constants';
 
 const normalizeStatus = (status) => (status || '').toLowerCase();
 
@@ -26,15 +25,6 @@ const formatTime = (iso) => {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const getStoredReviews = () => {
-  try {
-    const raw = localStorage.getItem(REVIEWS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
-
 const BookingHistory = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +34,7 @@ const BookingHistory = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState('');
   const [reviewForm, setReviewForm] = useState({ rating: 5, review: '' });
+  const [savingReview, setSavingReview] = useState(false);
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -51,21 +42,20 @@ const BookingHistory = () => {
         setLoading(true);
         const response = await bookingAPI.getCustomerBookings();
         const data = response?.data?.data || [];
-        const savedReviews = getStoredReviews();
 
         const mapped = data.map((booking) => {
-          const saved = savedReviews[booking._id] || null;
+          const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
           return {
             id: booking._id,
-            service: booking.serviceType,
+            service: serviceLabel,
             provider: booking.providerId?.name || 'Assigned Provider',
             date: formatDate(booking.date),
             time: formatTime(booking.date),
             status: statusToUi(booking.status),
             rawStatus: booking.status,
             price: formatServicePrice(booking.serviceType, booking.price),
-            rating: saved?.rating ?? null,
-            review: saved?.review ?? null
+            rating: typeof booking.rating === 'number' ? booking.rating : null,
+            review: booking.review || null
           };
         });
 
@@ -138,30 +128,49 @@ const BookingHistory = () => {
     setReviewForm({ rating: 5, review: '' });
   };
 
-  const saveReview = () => {
+  const saveReview = async () => {
     const ratingValue = Number(reviewForm.rating);
     const reviewText = reviewForm.review.trim();
 
-    const nextBookings = bookings.map((booking) => {
-      if (booking.id !== selectedBookingId) return booking;
-      return {
-        ...booking,
+    try {
+      setSavingReview(true);
+      setError('');
+      await bookingAPI.submitReview(selectedBookingId, {
         rating: ratingValue,
-        review: reviewText || null
-      };
-    });
+        review: reviewText
+      });
 
-    setBookings(nextBookings);
-
-    const savedReviews = getStoredReviews();
-    savedReviews[selectedBookingId] = {
-      rating: ratingValue,
-      review: reviewText || null
-    };
-    localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(savedReviews));
-
-    closeReviewModal();
+      setBookings((prev) =>
+        prev.map((booking) =>
+          booking.id === selectedBookingId
+            ? { ...booking, rating: ratingValue, review: reviewText || null }
+            : booking
+        )
+      );
+      closeReviewModal();
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to save review'));
+    } finally {
+      setSavingReview(false);
+    }
   };
+
+  const renderStars = (value, interactive = false, onSelect = () => {}) => (
+    <div className="star-rating" role={interactive ? 'radiogroup' : undefined} aria-label="Rating">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          className={`star ${star <= value ? 'filled' : ''}`}
+          onClick={() => interactive && onSelect(star)}
+          aria-label={`${star} star${star > 1 ? 's' : ''}`}
+          disabled={!interactive}
+        >
+          <FaStar />
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="booking-history-page">
@@ -225,7 +234,7 @@ const BookingHistory = () => {
                   <div className="detail-item">
                     <FaStar className="detail-icon" />
                     <div>
-                      <strong>Rating:</strong> {'*'.repeat(booking.rating)}
+                      <strong>Rating:</strong> {renderStars(booking.rating)}
                       <span className="rating-text"> ({booking.rating}/5)</span>
                     </div>
                   </div>
@@ -272,19 +281,8 @@ const BookingHistory = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="rating-select">Rating</label>
-              <select
-                id="rating-select"
-                className="form-control"
-                value={reviewForm.rating}
-                onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))}
-              >
-                <option value={5}>5 - Excellent</option>
-                <option value={4}>4 - Very Good</option>
-                <option value={3}>3 - Good</option>
-                <option value={2}>2 - Fair</option>
-                <option value={1}>1 - Poor</option>
-              </select>
+              <label>Rating</label>
+              {renderStars(reviewForm.rating, true, (star) => setReviewForm((prev) => ({ ...prev, rating: star })))}
             </div>
 
             <div className="form-group">
@@ -301,7 +299,9 @@ const BookingHistory = () => {
 
             <div className="review-modal-actions">
               <button type="button" className="btn btn-outline" onClick={closeReviewModal}>Cancel</button>
-              <button type="button" className="btn btn-primary" onClick={saveReview}>Save Review</button>
+              <button type="button" className="btn btn-primary" onClick={saveReview} disabled={savingReview}>
+                {savingReview ? 'Saving...' : 'Save Review'}
+              </button>
             </div>
           </div>
         </div>

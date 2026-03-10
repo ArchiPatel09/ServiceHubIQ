@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -53,18 +53,33 @@ export const authAPI = {
   registerProvider: (userData) => api.post('/auth/register/provider', userData),
   login: (credentials) => api.post('/auth/login', credentials),
   me: () => api.get('/auth/me'),
-  googleLoginUrl: () => `${API_BASE_URL}/auth/google`
+  googleLoginUrl: (role, service) => {
+    const params = new URLSearchParams();
+    if (role) params.append('role', role);
+    if (service) params.append('service', service);
+    const query = params.toString();
+    return `${API_BASE_URL}/auth/google${query ? `?${query}` : ''}`;
+  }
 };
 
 export const bookingAPI = {
   createBooking: (bookingData) => api.post('/bookings', bookingData),
   getCustomerBookings: () => api.get('/bookings/customer'),
   getProviderBookings: () => api.get('/bookings/provider'),
-  updateBookingStatus: (bookingId, status) => api.patch(`/bookings/${bookingId}/status`, { status })
+  updateBookingStatus: (bookingId, status) => api.patch(`/bookings/${bookingId}/status`, { status }),
+  submitReview: (bookingId, payload) => api.patch(`/bookings/${bookingId}/review`, payload)
 };
 
 export const userAPI = {
-  getProviders: (profession) => api.get('/users/providers', { params: profession ? { profession } : undefined })
+  getProviders: (service, location) =>
+    api.get('/users/providers', { params: { ...(service ? { service } : {}), ...(location ? { location } : {}) } }),
+  getMe: () => api.get('/users/me'),
+  updateMe: (payload) => api.put('/users/me', payload)
+};
+
+export const providerAPI = {
+  getMe: () => api.get('/providers/me'),
+  updateMe: (payload) => api.put('/providers/me', payload)
 };
 
 export default api;

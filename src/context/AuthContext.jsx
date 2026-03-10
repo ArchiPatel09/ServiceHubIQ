@@ -1,5 +1,5 @@
-﻿import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI, extractApiError } from '../services/api';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { authAPI, extractApiError, userAPI } from '../services/api';
 
 const AuthContext = createContext({});
 
@@ -67,10 +67,6 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Email and password are required');
     }
 
-    if (role === 'admin') {
-      throw new Error('Admin login is not supported by this backend');
-    }
-
     const response = await authAPI.login({ email, password });
     const token = response?.data?.data?.token;
     const loggedInUser = response?.data?.data?.user;
@@ -114,21 +110,21 @@ export const AuthProvider = ({ children }) => {
       email: userData.email,
       password: userData.password,
       phone: userData.phone,
-      address: userData.address
+      address: userData.address,
+      profile_image: userData.profile_image
     };
 
     const role = userData.userType || 'customer';
 
-    if (role === 'admin') {
-      throw new Error('Admin registration is not supported by this backend');
-    }
-
     let response;
     if (role === 'provider') {
-      if (!userData.profession) {
-        throw new Error('Profession is required for provider registration');
+      if (!userData.provider_service) {
+        throw new Error('Service is required for provider registration');
       }
-      response = await authAPI.registerProvider({ ...payload, profession: userData.profession });
+      response = await authAPI.registerProvider({
+        ...payload,
+        provider_service: userData.provider_service
+      });
     } else {
       response = await authAPI.registerCustomer(payload);
     }
@@ -136,17 +132,20 @@ export const AuthProvider = ({ children }) => {
     return response?.data?.data?.user;
   };
 
-  const updateProfile = (updates) => {
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
-    return updatedUser;
-  };
+  const updateProfile = async (updates) => {
+    const payload = {
+      name: updates.name,
+      phone: updates.phone,
+      address: updates.address,
+      profile_image: updates.profile_image
+    };
 
-  const updateRole = (newRole) => {
-    const updatedUser = { ...user, role: newRole };
-    setUser(updatedUser);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+    const response = await userAPI.updateMe(payload);
+    const updatedUser = response?.data?.data?.user;
+    if (updatedUser) {
+      setUser(updatedUser);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+    }
     return updatedUser;
   };
 
@@ -175,7 +174,6 @@ export const AuthProvider = ({ children }) => {
     },
     logout,
     updateProfile,
-    updateRole,
     isAuthenticated: !!user,
     loading
   };

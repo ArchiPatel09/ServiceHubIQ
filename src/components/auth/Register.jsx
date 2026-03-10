@@ -1,11 +1,11 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { EMAIL_REGEX } from '../../utils/validation';
+import { SERVICES } from '../../services/constants';
+import AddressAutocomplete from '../shared/AddressAutocomplete';
 import ErrorMessage from '../shared/ErrorMessage';
 import { FaUser, FaEnvelope, FaLock, FaPhone, FaMapMarkerAlt, FaTools } from 'react-icons/fa';
-
-const PROVIDER_PROFESSIONS = ['Plumber', 'Electrician', 'Gardener', 'Cleaner', 'Carpenter'];
 
 const Register = () => {
   const navigate = useNavigate();
@@ -18,8 +18,9 @@ const Register = () => {
     confirmPassword: '',
     phone: '',
     address: '',
-    profession: '',
-    userType: 'customer'
+    provider_service: '',
+    userType: 'customer',
+    profile_image: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -37,6 +38,11 @@ const Register = () => {
     if (errors.general) {
       setErrors((prev) => ({ ...prev, general: '' }));
     }
+  };
+
+  const handleAddressSelect = (address) => {
+    setFormData((prev) => ({ ...prev, address }));
+    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
   };
 
   const validateForm = () => {
@@ -60,8 +66,8 @@ const Register = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (formData.userType === 'provider' && !formData.profession) {
-      newErrors.profession = 'Please select a profession';
+    if (formData.userType === 'provider' && !formData.provider_service) {
+      newErrors.provider_service = 'Please select a service';
     }
 
     return newErrors;
@@ -179,14 +185,15 @@ const Register = () => {
               <FaMapMarkerAlt className="input-icon" />
               Address
             </label>
-            <input
-              type="text"
+            <AddressAutocomplete
               name="address"
               value={formData.address}
               onChange={handleChange}
+              onSelect={handleAddressSelect}
               className="form-control"
               placeholder="Enter your address"
             />
+            <ErrorMessage message={errors.address} />
           </div>
 
           <div className="form-group">
@@ -212,23 +219,23 @@ const Register = () => {
 
           {formData.userType === 'provider' && (
             <div className="form-group">
-              <label htmlFor="profession-select">Profession</label>
+              <label htmlFor="service-select">Service</label>
               <select
-                id="profession-select"
-                name="profession"
-                value={formData.profession}
+                id="service-select"
+                name="provider_service"
+                value={formData.provider_service}
                 onChange={handleChange}
-                className={`form-control ${errors.profession ? 'is-invalid' : ''}`}
+                className={`form-control ${errors.provider_service ? 'is-invalid' : ''}`}
                 required
               >
-                <option value="">Select profession</option>
-                {PROVIDER_PROFESSIONS.map((profession) => (
-                  <option key={profession} value={profession}>
-                    {profession}
+                <option value="">Select service</option>
+                {SERVICES.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.label}
                   </option>
                 ))}
               </select>
-              <ErrorMessage message={errors.profession} />
+              <ErrorMessage message={errors.provider_service} />
             </div>
           )}
 

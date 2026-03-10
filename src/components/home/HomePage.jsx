@@ -77,8 +77,8 @@ const HomePage = () => {
           </div>
 
           <p className="hero-description">
-            Connect with verified professionals for plumbing, electrical work, cleaning, snow removal, painting, and
-            more. AI-powered matching for better service and employment opportunities.
+            Connect with verified professionals for deep cleaning, plumbing, electrical work, gardening, and snow removal.
+            AI-powered matching for better service and employment opportunities.
           </p>
 
           <div className="hero-buttons">
@@ -144,7 +144,7 @@ const HomePage = () => {
       <section className="services-preview">
         <h2 className="section-title">Popular Services</h2>
         <div className="services-grid">
-          {['Plumbing', 'Electrical', 'Cleaning', 'Snow Removal', 'Painting', 'Appliance Repair'].map((service) => (
+          {['Deep Cleaning', 'Plumbing', 'Electrician', 'Gardener', 'Snow Removal'].map((service) => (
             <div key={service} className="service-tag">
               {service}
             </div>

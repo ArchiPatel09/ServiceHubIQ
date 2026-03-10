@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaTools, FaReceipt } from 'react-icons/fa';
 import { bookingAPI, extractApiError } from '../../services/api';
 import { formatServicePrice } from '../../utils/servicePricing';
+import { SERVICE_LABELS } from '../../services/constants';
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
@@ -44,9 +45,10 @@ const BookingConfirmation = () => {
   const formatted = useMemo(() => {
     if (!booking) return null;
     const dateObj = booking.date ? new Date(booking.date) : null;
+    const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
     return {
       id: booking._id,
-      service: booking.serviceType,
+      service: serviceLabel,
       provider: booking.providerId?.name || 'Assigned Provider',
       date: dateObj ? dateObj.toLocaleDateString() : '-',
       time: dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
@@ -75,7 +77,7 @@ const BookingConfirmation = () => {
           <p>{error}</p>
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <Link className="btn btn-primary" to="/services">Browse Services</Link>
-            <Link className="btn btn-outline" to="/dashboard">Back to Dashboard</Link>
+            <Link className="btn btn-outline" to="/customer-dashboard">Back to Dashboard</Link>
           </div>
         </div>
       </div>
@@ -90,7 +92,7 @@ const BookingConfirmation = () => {
           <p>No booking found. Please book a service first.</p>
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <Link className="btn btn-primary" to="/services">Browse Services</Link>
-            <Link className="btn btn-outline" to="/dashboard">Back to Dashboard</Link>
+            <Link className="btn btn-outline" to="/customer-dashboard">Back to Dashboard</Link>
           </div>
         </div>
       </div>
@@ -122,7 +124,7 @@ const BookingConfirmation = () => {
 
         <div className="booking-actions" style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link className="btn btn-primary" to="/booking-history">View Booking History</Link>
-          <Link className="btn btn-outline" to="/dashboard">Back to Dashboard</Link>
+          <Link className="btn btn-outline" to="/customer-dashboard">Back to Dashboard</Link>
           <button className="btn btn-outline" onClick={() => navigate('/services')} type="button">Book Another Service</button>
         </div>
       </div>

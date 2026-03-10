@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
 import { EMAIL_REGEX } from '../../utils/validation';
+import { SERVICES } from '../../services/constants';
 import ErrorMessage from '../shared/ErrorMessage';
 import { FaEnvelope, FaLock, FaUser, FaTools, FaGoogle } from 'react-icons/fa';
 
@@ -15,7 +16,8 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'customer'
+    role: '',
+    provider_service: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -32,7 +34,7 @@ const Login = () => {
         if (oauthUser?.role === 'provider') {
           navigate('/provider-dashboard', { replace: true });
         } else {
-          navigate('/dashboard', { replace: true });
+          navigate('/customer-dashboard', { replace: true });
         }
       } catch (error) {
         setErrors({ general: error.message || 'Google login failed' });
@@ -70,6 +72,10 @@ const Login = () => {
       newErrors.role = 'Please select a role';
     }
 
+    if (formData.role === 'provider' && !formData.provider_service) {
+      newErrors.provider_service = 'Please select your service';
+    }
+
     return newErrors;
   };
 
@@ -95,7 +101,7 @@ const Login = () => {
       if (formData.role === 'provider') {
         navigate('/provider-dashboard');
       } else {
-        navigate('/dashboard');
+        navigate('/customer-dashboard');
       }
     } catch (error) {
       setErrors({ general: error.message || 'Invalid credentials. Please try again.' });
@@ -105,7 +111,11 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = authAPI.googleLoginUrl();
+    if (formData.role === 'provider' && !formData.provider_service) {
+      setErrors({ provider_service: 'Please select your service to continue with Google' });
+      return;
+    }
+    window.location.href = authAPI.googleLoginUrl(formData.role, formData.provider_service);
   };
 
   return (
@@ -186,6 +196,27 @@ const Login = () => {
             </div>
             <ErrorMessage message={errors.role} />
           </div>
+
+          {formData.role === 'provider' && (
+            <div className="form-group">
+              <label>Service</label>
+              <select
+                name="provider_service"
+                value={formData.provider_service}
+                onChange={handleChange}
+                className={`form-control ${errors.provider_service ? 'is-invalid' : ''}`}
+                disabled={loading}
+              >
+                <option value="">Select your service</option>
+                {SERVICES.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.label}
+                  </option>
+                ))}
+              </select>
+              <ErrorMessage message={errors.provider_service} />
+            </div>
+          )}
 
           <div className="auth-actions">
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>

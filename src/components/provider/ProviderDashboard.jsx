@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { bookingAPI, extractApiError } from '../../services/api';
+import { SERVICE_LABELS } from '../../services/constants';
 import {
   FaBriefcase,
   FaCalendarCheck,
@@ -84,12 +85,14 @@ const ProviderDashboard = () => {
     }
   };
 
+  const providerServiceLabel = SERVICE_LABELS[user?.provider_service || user?.providerService || ''] || 'Service Provider';
+
   return (
     <div className="provider-dashboard">
       <div className="dashboard-header">
         <h1>Provider Dashboard</h1>
         <p>
-          Welcome back, {user?.name} ({user?.profession || 'Service Provider'})
+          Welcome back, {user?.name} ({providerServiceLabel})
         </p>
       </div>
 
@@ -157,10 +160,11 @@ const ProviderDashboard = () => {
               const target = nextStatus(booking.status);
               const customer = booking.customerId || {};
 
+              const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
               return (
                 <div key={booking._id} className="job-card">
                   <div className="job-info">
-                    <h4>{booking.serviceType}</h4>
+                    <h4>{serviceLabel}</h4>
                     <p className="job-customer">Customer: {customer.name || 'Unknown'}</p>
                     <p className="job-date">Scheduled: {toUiDate(booking.date)}</p>
                     <p className="job-date">Address: {booking.address}</p>

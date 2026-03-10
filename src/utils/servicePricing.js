@@ -1,17 +1,12 @@
 const SERVICE_PRICE_MAP = {
-  'emergency plumbing service': 89,
+  deep_cleaning: 129,
   plumbing: 89,
-  'complete home cleaning': 129,
-  cleaning: 129,
-  'electrical installation': 149,
-  electrical: 149,
-  'snow removal service': 49,
-  'snow removal': 49,
-  painting: 199,
-  'appliance repair': 79
+  electrician: 149,
+  gardener: 79,
+  snow_removal: 49
 };
 
-const normalizeServiceType = (value) => (value || '').toString().trim().toLowerCase();
+const normalizeServiceType = (value) => (value || '').toString().trim().toLowerCase().replace(/\s+/g, '_');
 
 const coerceNumericPrice = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;

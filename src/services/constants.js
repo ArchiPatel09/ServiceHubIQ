@@ -1,17 +1,17 @@
-export const SERVICE_CATEGORIES = [
-  'Plumbing',
-  'Electrical',
-  'Cleaning',
-  'Snow Removal',
-  'Painting',
-  'Appliance Repair',
-  'Gardening',
-  'Carpentry',
-  'HVAC',
-  'Moving',
-  'Handyman',
-  'Pest Control'
+export const SERVICES = [
+  { id: 'deep_cleaning', label: 'Deep Cleaning' },
+  { id: 'plumbing', label: 'Plumbing' },
+  { id: 'electrician', label: 'Electrician' },
+  { id: 'gardener', label: 'Gardener' },
+  { id: 'snow_removal', label: 'Snow Removal' }
 ];
+
+export const SERVICE_IDS = SERVICES.map((s) => s.id);
+
+export const SERVICE_LABELS = SERVICES.reduce((acc, service) => {
+  acc[service.id] = service.label;
+  return acc;
+}, {});
 
 export const CANADIAN_CITIES = [
   'Toronto, ON',
@@ -35,8 +35,7 @@ export const TIME_SLOTS = [
 
 export const ROLES = {
   CUSTOMER: 'customer',
-  PROVIDER: 'provider',
-  ADMIN: 'admin'
+  PROVIDER: 'provider'
 };
 
 export const BOOKING_STATUS = {
@@ -47,7 +46,6 @@ export const BOOKING_STATUS = {
   CANCELLED: 'cancelled'
 };
 
-// ✅ Added for checkpoint-stable booking persistence
 export const STORAGE_KEYS = {
   BOOKINGS: 'servicehubiq_bookings_v1'
 };

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Added useNavigate
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FaUser, FaTools, FaUserShield, FaArrowRight } from 'react-icons/fa';
+import { SERVICES } from '../../services/constants';
+import { FaUser, FaTools, FaArrowRight } from 'react-icons/fa';
 
 const RoleSelection = () => {
-  const navigate = useNavigate(); // Added useNavigate
-  const { user, updateRole } = useAuth();
+  const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
   const [selectedRole, setSelectedRole] = useState(user?.role || '');
+  const [selectedService, setSelectedService] = useState(user?.provider_service || '');
 
   const roles = [
     {
@@ -18,7 +20,7 @@ const RoleSelection = () => {
         'Browse and book services',
         'Track service history',
         'Rate providers',
-        'Get AI recommendations'
+        'Get recommendations'
       ]
     },
     {
@@ -27,22 +29,10 @@ const RoleSelection = () => {
       icon: <FaTools />,
       description: 'Offer your skills and grow your business',
       features: [
-        'Find job opportunities',
         'Manage bookings',
-        'Get performance insights',
-        'Access AI job matching'
-      ]
-    },
-    {
-      id: 'admin',
-      title: 'Administrator',
-      icon: <FaUserShield />,
-      description: 'Manage platform operations and users',
-      features: [
-        'Monitor platform activity',
-        'Manage user accounts',
-        'View analytics',
-        'Handle disputes'
+        'Update availability',
+        'Track performance',
+        'Build your profile'
       ]
     }
   ];
@@ -51,28 +41,26 @@ const RoleSelection = () => {
     setSelectedRole(role);
   };
 
-  // In RoleSelection.jsx, fix the handleContinue function:
-const handleContinue = () => {
-  if (selectedRole) {
-    // Update user role in context
-    updateRole(selectedRole);
-    
-    // Navigate based on role
-    switch(selectedRole) {
-      case 'customer':
-        navigate('/dashboard');
-        break;
-      case 'provider':
-        navigate('/provider-dashboard');
-        break;
-      case 'admin':
-        navigate('/admin-dashboard');
-        break;
-      default:
-        navigate('/dashboard');
+  const handleContinue = async () => {
+    if (!selectedRole) return;
+
+    if (selectedRole === 'provider' && !selectedService) return;
+
+    try {
+      await updateProfile({
+        role: selectedRole,
+        provider_service: selectedRole === 'provider' ? selectedService : null
+      });
+    } catch {
+      // no-op
     }
-  }
-};
+
+    if (selectedRole === 'provider') {
+      navigate('/provider-dashboard');
+    } else {
+      navigate('/customer-dashboard');
+    }
+  };
 
   return (
     <div className="role-selection-page">
@@ -80,7 +68,7 @@ const handleContinue = () => {
         <div className="role-header">
           <h1>Select Your Role</h1>
           <p className="subtitle">
-            Choose how you want to use ServiceHubIQ. You can change this later in settings.
+            Choose how you want to use ServiceHubIQ. You can change this later in your profile.
           </p>
         </div>
 
@@ -96,7 +84,7 @@ const handleContinue = () => {
               </div>
               <h3 className="role-title">{role.title}</h3>
               <p className="role-description">{role.description}</p>
-              
+
               <ul className="role-features">
                 {role.features.map((feature, index) => (
                   <li key={index} className="role-feature">
@@ -105,8 +93,8 @@ const handleContinue = () => {
                   </li>
                 ))}
               </ul>
-              
-              <button 
+
+              <button
                 className={`role-select-btn ${selectedRole === role.id ? 'active' : ''}`}
                 onClick={() => handleRoleSelect(role.id)}
               >
@@ -116,20 +104,35 @@ const handleContinue = () => {
           ))}
         </div>
 
+        {selectedRole === 'provider' && (
+          <div className="form-group" style={{ maxWidth: 420, margin: '0 auto 24px' }}>
+            <label>Select Your Service</label>
+            <select
+              className="form-control"
+              value={selectedService}
+              onChange={(e) => setSelectedService(e.target.value)}
+            >
+              <option value="">Select service</option>
+              {SERVICES.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="role-footer">
           <p className="current-user">
             Signed in as: <strong>{user?.email || 'User'}</strong>
           </p>
-          <button 
+          <button
             className="btn btn-primary btn-lg"
             onClick={handleContinue}
-            disabled={!selectedRole}
+            disabled={!selectedRole || (selectedRole === 'provider' && !selectedService)}
           >
             Continue to Dashboard
           </button>
-          <p className="note">
-            You can change your role anytime from your profile settings
-          </p>
         </div>
       </div>
     </div>

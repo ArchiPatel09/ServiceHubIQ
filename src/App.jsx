@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -16,26 +16,21 @@ import BookingHistory from './components/customer/BookingHistory';
 import Profile from './components/shared/Profile';
 import CustomerDashboard from './components/customer/CustomerDashboard';
 import ProviderDashboard from './components/provider/ProviderDashboard';
-import AdminDashboard from './components/admin/AdminDashboard';
 import Settings from './components/shared/Settings';
 import NotFound from './components/shared/NotFound';
 import BookingConfirmation from './components/customer/BookingConfirmation';
+import StaticPage from './components/static/StaticPage';
 
 function RoleBasedRedirect() {
   const { user } = useAuth();
 
   if (!user) return null;
 
-  switch (user.role) {
-    case 'customer':
-      return <CustomerDashboard />;
-    case 'provider':
-      return <ProviderDashboard />;
-    case 'admin':
-      return <AdminDashboard />;
-    default:
-      return <CustomerDashboard />;
+  if (user.role === 'provider') {
+    return <Navigate to="/provider-dashboard" replace />;
   }
+
+  return <Navigate to="/customer-dashboard" replace />;
 }
 
 function AppShell() {
@@ -55,6 +50,24 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <RoleBasedRedirect />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer-dashboard"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/provider-dashboard"
+            element={
+              <ProtectedRoute requiredRole="provider">
+                <ProviderDashboard />
               </ProtectedRoute>
             }
           />
@@ -96,24 +109,6 @@ function AppShell() {
           />
 
           <Route
-            path="/provider-dashboard"
-            element={
-              <ProtectedRoute requiredRole="provider">
-                <ProviderDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-dashboard"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/settings"
             element={
               <ProtectedRoute>
@@ -123,6 +118,59 @@ function AppShell() {
           />
 
           <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+          <Route
+            path="/about"
+            element={
+              <StaticPage
+                title="About ServiceHubIQ"
+                subtitle="A smarter way to connect homeowners with trusted service professionals."
+                content={[
+                  'ServiceHubIQ connects customers with verified providers across Canada for the services that matter most.',
+                  'We focus on reliability, transparency, and fast booking experiences to help you maintain your home with confidence.'
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <StaticPage
+                title="Contact Us"
+                subtitle="We are here to help."
+                content={[
+                  'Email: support@servicehubiq.com',
+                  'Phone: +1 (416) 555-0123',
+                  'Location: Toronto, Ontario, Canada'
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <StaticPage
+                title="Privacy Policy"
+                subtitle="Your privacy matters to us."
+                content={[
+                  'We only collect the information required to deliver and improve ServiceHubIQ services.',
+                  'We never sell personal data and we protect your information using industry best practices.'
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <StaticPage
+                title="Terms of Service"
+                subtitle="Using ServiceHubIQ means agreeing to fair use and safety standards."
+                content={[
+                  'Please use ServiceHubIQ responsibly and provide accurate information for bookings and profiles.',
+                  'We reserve the right to update these terms as the platform evolves.'
+                ]}
+              />
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
