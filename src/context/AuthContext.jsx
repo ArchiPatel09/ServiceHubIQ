@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (email, password, role) => {
+  const login = async (email, password, role, providerService) => {
     if (!email || !password) {
       throw new Error('Email and password are required');
     }
@@ -77,6 +77,20 @@ export const AuthProvider = ({ children }) => {
 
     if (role && loggedInUser.role !== role) {
       throw new Error(`This account is registered as ${loggedInUser.role}`);
+    }
+
+    if (role === 'provider' && providerService) {
+      const normalize = (value) =>
+        String(value || '')
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '_');
+      const expected = normalize(providerService);
+      const actual = normalize(loggedInUser.providerService || loggedInUser.provider_service);
+
+      if (actual && expected && actual !== expected) {
+        throw new Error(`This provider is registered for ${actual.replace(/_/g, ' ')}`);
+      }
     }
 
     setSession(token, loggedInUser);
@@ -151,9 +165,9 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    login: async (email, password, role) => {
+    login: async (email, password, role, providerService) => {
       try {
-        return await login(email, password, role);
+        return await login(email, password, role, providerService);
       } catch (error) {
         throw new Error(extractApiError(error, 'Login failed'));
       }

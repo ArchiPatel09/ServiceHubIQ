@@ -155,22 +155,32 @@ const BookingHistory = () => {
     }
   };
 
-  const renderStars = (value, interactive = false, onSelect = () => {}) => (
-    <div className="star-rating" role={interactive ? 'radiogroup' : undefined} aria-label="Rating">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          className={`star ${star <= value ? 'filled' : ''}`}
-          onClick={() => interactive && onSelect(star)}
-          aria-label={`${star} star${star > 1 ? 's' : ''}`}
-          disabled={!interactive}
-        >
-          <FaStar />
-        </button>
-      ))}
-    </div>
-  );
+  const renderStars = (value, interactive = false, onSelect = () => {}) => {
+    if (!interactive) {
+      return (
+        <span className="rating-pill" aria-label={`Rated ${value} out of 5`}>
+          <FaStar className="rating-pill-icon" />
+          {value}/5
+        </span>
+      );
+    }
+
+    return (
+      <div className="star-rating" role="radiogroup" aria-label="Rating">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            className={`star ${star <= value ? 'filled' : ''}`}
+            onClick={() => onSelect(star)}
+            aria-label={`${star} star${star > 1 ? 's' : ''}`}
+          >
+            <FaStar />
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="booking-history-page">
@@ -231,11 +241,9 @@ const BookingHistory = () => {
                   <strong>Price:</strong> {booking.price}
                 </div>
                 {typeof booking.rating === 'number' && (
-                  <div className="detail-item">
-                    <FaStar className="detail-icon" />
+                  <div className="detail-item booking-rating">
                     <div>
                       <strong>Rating:</strong> {renderStars(booking.rating)}
-                      <span className="rating-text"> ({booking.rating}/5)</span>
                     </div>
                   </div>
                 )}

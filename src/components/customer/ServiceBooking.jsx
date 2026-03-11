@@ -4,6 +4,7 @@ import { FaCalendar, FaClock, FaHome, FaMapMarkerAlt, FaCreditCard, FaCheckCircl
 import { bookingAPI, extractApiError, userAPI } from '../../services/api';
 import { SERVICES, SERVICE_LABELS, TIME_SLOTS } from '../../services/constants';
 import { getServicePrice } from '../../utils/servicePricing';
+import AddressAutocomplete from '../shared/AddressAutocomplete';
 
 const ServiceBooking = () => {
   const navigate = useNavigate();
@@ -76,6 +77,11 @@ const ServiceBooking = () => {
     setProviderAvailabilityError('');
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (errors.general) setErrors((prev) => ({ ...prev, general: '' }));
+  };
+
+  const handleAddressSelect = (address) => {
+    setBookingData((prev) => ({ ...prev, address }));
+    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
   };
 
   const handleServiceSelect = (serviceId) => {
@@ -266,7 +272,14 @@ const ServiceBooking = () => {
 
               <div className="form-group">
                 <label><FaMapMarkerAlt /> Service Address</label>
-                <textarea name="address" value={bookingData.address} onChange={handleInputChange} className={`form-control ${errors.address ? 'is-invalid' : ''}`} placeholder="Enter the service address" rows="3" />
+                <AddressAutocomplete
+                  name="address"
+                  value={bookingData.address}
+                  onChange={handleInputChange}
+                  onSelect={handleAddressSelect}
+                  className={`form-control ${errors.address ? 'is-invalid' : ''}`}
+                  placeholder="Enter the service address"
+                />
                 {errors.address && <div className="error-text">{errors.address}</div>}
               </div>
 

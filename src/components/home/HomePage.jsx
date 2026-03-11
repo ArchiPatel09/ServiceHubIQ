@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { SERVICES } from '../../services/constants';
 import { useAuth } from '../../context/AuthContext';
 import { FaTools, FaHome, FaCalendarAlt, FaStar, FaShieldAlt, FaChartLine } from 'react-icons/fa';
 
@@ -11,6 +12,7 @@ const SEARCH_PLACEHOLDERS = [
 
 const HomePage = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [placeholderText, setPlaceholderText] = useState('');
 
@@ -51,6 +53,33 @@ const HomePage = () => {
     return () => clearTimeout(timeoutId);
   }, []);
 
+  const normalize = (value) => value.toLowerCase().replace(/[_-]/g, ' ').trim();
+  const stem = (value) => normalize(value).split(' ')[0].slice(0, 5);
+
+  const handleSearch = () => {
+    const rawTerm = searchQuery.trim();
+    if (!rawTerm) return;
+
+    const term = normalize(rawTerm);
+    const termStem = stem(term);
+
+    const isServiceQuery = SERVICES.some(({ id, label }) => {
+      const labelNorm = normalize(label);
+      const idNorm = normalize(id);
+
+      if (labelNorm.includes(term) || term.includes(labelNorm) || idNorm.includes(term) || term.includes(idNorm)) {
+        return true;
+      }
+
+      if (!termStem) return false;
+      return stem(labelNorm) === termStem || stem(idNorm) === termStem;
+    });
+
+    if (isServiceQuery) {
+      navigate(`/services?search=${encodeURIComponent(rawTerm)}`);
+    }
+  };
+
   return (
     <div className="home-page">
       <section className="hero-section">
@@ -71,6 +100,12 @@ const HomePage = () => {
               className="home-search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
               placeholder={placeholderText || SEARCH_PLACEHOLDERS[0]}
               aria-label="Search for home services"
             />

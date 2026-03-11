@@ -124,12 +124,10 @@ const RatingReview = () => {
                   </div>
                 </div>
                 <div className="review-rating">
-                  {[...Array(5)].map((_, index) => (
-                    <FaStar 
-                      key={index} 
-                      className={`star ${index < reviewItem.rating ? 'filled' : ''}`}
-                    />
-                  ))}
+                  <span className="rating-pill" aria-label={`Rated ${reviewItem.rating} out of 5`}>
+                    <FaStar className="rating-pill-icon" />
+                    {reviewItem.rating}/5
+                  </span>
                 </div>
               </div>
               <p className="review-comment">{reviewItem.comment}</p>

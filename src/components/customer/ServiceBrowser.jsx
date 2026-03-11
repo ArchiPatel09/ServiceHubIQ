@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ServiceCard from '../shared/ServiceCard';
 import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo } from 'react-icons/fa';
 import { userAPI } from '../../services/api';
@@ -8,6 +8,7 @@ import { getServicePrice } from '../../utils/servicePricing';
 
 const ServiceBrowser = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [providers, setProviders] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
@@ -16,6 +17,11 @@ const ServiceBrowser = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const term = searchParams.get('search') || '';
+    setSearchTerm(term);
+  }, [searchParams]);
 
   const categories = ['All Services', ...SERVICES.map((s) => SERVICE_LABELS[s.id])];
   const locations = CANADIAN_CITIES;

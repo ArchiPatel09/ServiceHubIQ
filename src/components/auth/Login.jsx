@@ -48,7 +48,12 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (name === 'role' && value === 'customer') {
+        return { ...prev, role: value, provider_service: '' };
+      }
+      return { ...prev, [name]: value };
+    });
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (errors.general) setErrors((prev) => ({ ...prev, general: '' }));
   };
@@ -90,7 +95,12 @@ const Login = () => {
 
     try {
       setLoading(true);
-      await login(formData.email.trim(), formData.password, formData.role);
+      await login(
+        formData.email.trim(),
+        formData.password,
+        formData.role,
+        formData.role === 'provider' ? formData.provider_service : ''
+      );
 
       const from = location.state?.from;
       if (from) {
