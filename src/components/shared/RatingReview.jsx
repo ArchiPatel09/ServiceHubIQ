@@ -76,7 +76,7 @@ const RatingReview = () => {
                       name="rating"
                       value={ratingValue}
                       onClick={() => setRating(ratingValue)}
-                      style={{ display: 'none' }}
+                      className="visually-hidden"
                     />
                     <FaStar
                       className={`star ${ratingValue <= (hoverRating || rating) ? 'filled' : ''}`}

@@ -8,7 +8,8 @@ const AddressAutocomplete = ({
   name,
   placeholder,
   className,
-  disabled
+  disabled,
+  required = false
 }) => {
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
@@ -27,9 +28,36 @@ const AddressAutocomplete = ({
 
         autocompleteRef.current.addListener('place_changed', () => {
           const place = autocompleteRef.current.getPlace();
-          const formatted = place?.formatted_address || place?.name || '';
-          if (formatted && onSelect) {
-            onSelect(formatted);
+          if (!place) return;
+
+          const components = place.address_components || [];
+          const getComponent = (type) =>
+            components.find((component) => component.types.includes(type))?.long_name || '';
+
+          const streetNumber = getComponent('street_number');
+          const route = getComponent('route');
+          const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
+          const line2 = getComponent('subpremise');
+          const city =
+            getComponent('locality') ||
+            getComponent('postal_town') ||
+            getComponent('administrative_area_level_2');
+          const state = getComponent('administrative_area_level_1');
+          const country = getComponent('country');
+          const postalCode = getComponent('postal_code');
+
+          const formatted = place.formatted_address || place.name || line1;
+
+          if (onSelect) {
+            onSelect({
+              line1,
+              line2,
+              city,
+              state,
+              country,
+              postalCode,
+              formatted
+            });
           }
         });
       })
@@ -52,6 +80,7 @@ const AddressAutocomplete = ({
       className={className}
       placeholder={placeholder}
       disabled={disabled}
+      required={required}
       autoComplete="off"
     />
   );

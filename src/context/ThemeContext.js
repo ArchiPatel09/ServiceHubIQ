@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const ThemeContext = createContext({});
 const THEME_STORAGE_KEY = 'servicehubiq_theme';

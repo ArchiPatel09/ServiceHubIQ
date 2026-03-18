@@ -5,6 +5,8 @@ import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo } from 'react-icons/fa';
 import { userAPI } from '../../services/api';
 import { SERVICES, SERVICE_LABELS, CANADIAN_CITIES } from '../../services/constants';
 import { getServicePrice } from '../../utils/servicePricing';
+import { formatCityState } from '../../utils/address';
+import ErrorMessage from '../shared/ErrorMessage';
 
 const ServiceBrowser = () => {
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ const ServiceBrowser = () => {
         rating: provider.rating || 0,
         reviews: provider.reviews || 0,
         provider: provider.name,
-        location: provider.address || 'Location not set',
+        location: formatCityState(provider.address) || 'Location not set',
         available: true
       };
     });
@@ -156,7 +158,7 @@ const ServiceBrowser = () => {
         </div>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      <ErrorMessage message={error} className="form-error-global" />
 
       {loading ? (
         <div className="empty-history">

@@ -84,6 +84,15 @@ const Header = () => {
                     </li>
                   </>
                 )}
+
+                {user.role === 'admin' && (
+                  <li className="nav-item">
+                    <Link to="/admin-dashboard" className="nav-link">
+                      <FaChartLine className="nav-icon" />
+                      <span>Admin</span>
+                    </Link>
+                  </li>
+                )}
               </ul>
             </nav>
           )}
@@ -122,7 +131,13 @@ const Header = () => {
                   <div className="dropdown-divider" />
 
                   <Link
-                    to={user.role === 'provider' ? '/provider-dashboard' : '/customer-dashboard'}
+                    to={
+                      user.role === 'provider'
+                        ? '/provider-dashboard'
+                        : user.role === 'admin'
+                        ? '/admin-dashboard'
+                        : '/customer-dashboard'
+                    }
                     className="dropdown-item"
                     onClick={() => setDropdownOpen(false)}
                   >

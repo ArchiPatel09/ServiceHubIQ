@@ -284,7 +284,7 @@ const Settings = () => {
                       className={`theme-option ${settings.theme === theme.id ? 'selected' : ''}`}
                       onClick={() => handleSettingChange('theme', theme.id)}
                     >
-                      <div className="theme-color" style={{ backgroundColor: theme.color }}></div>
+                      <div className={`theme-color theme-color-${theme.id}`}></div>
                       <div className="theme-name">{theme.name}</div>
                     </div>
                   ))}

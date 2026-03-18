@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { bookingAPI, extractApiError } from '../../services/api';
 import { formatServicePrice, getServicePrice } from '../../utils/servicePricing';
 import { SERVICE_LABELS } from '../../services/constants';
+import ErrorMessage from '../shared/ErrorMessage';
 import {
   FaCalendarAlt,
   FaHistory,
@@ -103,7 +104,7 @@ const CustomerDashboard = () => {
         </div>
       </div>
 
-      {bookingError && <p className="form-error-message">{bookingError}</p>}
+      <ErrorMessage message={bookingError} className="form-error-global" />
 
       <div className="dashboard-stats">
         <div className="stat-card">

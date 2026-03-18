@@ -32,7 +32,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
 
       if (!token) {
         setLoading(false);
@@ -45,15 +44,8 @@ export const AuthProvider = ({ children }) => {
         setUser(me);
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(me));
       } catch {
-        if (storedUser) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch {
-            logout();
-          }
-        } else {
-          logout();
-        }
+        // Fix: database/API stays the source of truth for role on refresh too.
+        logout();
       } finally {
         setLoading(false);
       }
@@ -62,12 +54,17 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (email, password, role, providerService) => {
+  const login = async (email, password, selectedRole, selectedService) => {
     if (!email || !password) {
       throw new Error('Email and password are required');
     }
 
-    const response = await authAPI.login({ email, password });
+    const response = await authAPI.login({
+      email,
+      password,
+      selectedRole,
+      selectedService
+    });
     const token = response?.data?.data?.token;
     const loggedInUser = response?.data?.data?.user;
 
@@ -75,24 +72,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Invalid login response from server');
     }
 
-    if (role && loggedInUser.role !== role) {
-      throw new Error(`This account is registered as ${loggedInUser.role}`);
-    }
-
-    if (role === 'provider' && providerService) {
-      const normalize = (value) =>
-        String(value || '')
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, '_');
-      const expected = normalize(providerService);
-      const actual = normalize(loggedInUser.providerService || loggedInUser.provider_service);
-
-      if (actual && expected && actual !== expected) {
-        throw new Error(`This provider is registered for ${actual.replace(/_/g, ' ')}`);
-      }
-    }
-
+    // Fix: never trust the login form for role assignment. Stored role comes from the API response.
     setSession(token, loggedInUser);
     return loggedInUser;
   };
@@ -165,9 +145,9 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    login: async (email, password, role, providerService) => {
+    login: async (email, password, selectedRole, selectedService) => {
       try {
-        return await login(email, password, role, providerService);
+        return await login(email, password, selectedRole, selectedService);
       } catch (error) {
         throw new Error(extractApiError(error, 'Login failed'));
       }

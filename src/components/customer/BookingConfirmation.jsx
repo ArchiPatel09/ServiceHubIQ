@@ -4,6 +4,8 @@ import { FaCheckCircle, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaTools, FaRecei
 import { bookingAPI, extractApiError } from '../../services/api';
 import { formatServicePrice } from '../../utils/servicePricing';
 import { SERVICE_LABELS } from '../../services/constants';
+import { formatAddress } from '../../utils/address';
+import ErrorMessage from '../shared/ErrorMessage';
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
@@ -54,7 +56,9 @@ const BookingConfirmation = () => {
       time: dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
       address: booking.address,
       status: booking.status,
-      price: formatServicePrice(booking.serviceType, booking.price)
+      price: formatServicePrice(booking.serviceType, booking.price),
+      isEmergencyService: booking.isEmergencyService || false,
+      extraFee: booking.extraFee || 0
     };
   }, [booking]);
 
@@ -74,8 +78,8 @@ const BookingConfirmation = () => {
       <div className="booking-confirmation-page">
         <div className="booking-container">
           <h1>Booking Confirmation</h1>
-          <p>{error}</p>
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          <ErrorMessage message={error} className="form-error-global" />
+          <div className="booking-confirmation-actions">
             <Link className="btn btn-primary" to="/services">Browse Services</Link>
             <Link className="btn btn-outline" to="/customer-dashboard">Back to Dashboard</Link>
           </div>
@@ -90,7 +94,7 @@ const BookingConfirmation = () => {
         <div className="booking-container">
           <h1>Booking Confirmation</h1>
           <p>No booking found. Please book a service first.</p>
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          <div className="booking-confirmation-actions">
             <Link className="btn btn-primary" to="/services">Browse Services</Link>
             <Link className="btn btn-outline" to="/customer-dashboard">Back to Dashboard</Link>
           </div>
@@ -102,27 +106,30 @@ const BookingConfirmation = () => {
   return (
     <div className="booking-confirmation-page">
       <div className="booking-container">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <FaCheckCircle size={28} />
+        <div className="booking-confirmation-header">
+          <FaCheckCircle size={28} className="booking-confirmation-icon" />
           <div>
-            <h1 style={{ margin: 0 }}>Booking Confirmed!</h1>
-            <p style={{ margin: 0, opacity: 0.8 }}>Your service has been successfully scheduled.</p>
+            <h1 className="booking-confirmation-title">Booking Confirmed!</h1>
+            <p className="booking-confirmation-subtitle">Your service has been successfully scheduled.</p>
           </div>
         </div>
 
-        <div className="booking-summary" style={{ marginTop: 12 }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaReceipt /> Confirmation Details</h3>
+        <div className="booking-summary booking-confirmation-summary">
+          <h3 className="booking-confirmation-summary-title"><FaReceipt /> Confirmation Details</h3>
           <div className="summary-item"><strong>Booking ID:</strong> {formatted.id}</div>
           <div className="summary-item"><strong><FaTools /> Service:</strong> {formatted.service}</div>
           <div className="summary-item"><strong>Provider:</strong> {formatted.provider}</div>
           <div className="summary-item"><strong><FaCalendarAlt /> Date:</strong> {formatted.date}</div>
           <div className="summary-item"><strong><FaClock /> Time:</strong> {formatted.time}</div>
-          <div className="summary-item"><strong><FaMapMarkerAlt /> Address:</strong> {formatted.address || '-'}</div>
+          <div className="summary-item"><strong><FaMapMarkerAlt /> Address:</strong> {formatAddress(formatted.address) || '-'}</div>
           <div className="summary-item"><strong>Price:</strong> {formatted.price}</div>
+          {formatted.isEmergencyService && (
+            <div className="summary-item"><strong>Emergency Fee:</strong> +${formatted.extraFee}</div>
+          )}
           <div className="summary-item"><strong>Status:</strong> {formatted.status}</div>
         </div>
 
-        <div className="booking-actions" style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="booking-actions booking-confirmation-actions">
           <Link className="btn btn-primary" to="/booking-history">View Booking History</Link>
           <Link className="btn btn-outline" to="/customer-dashboard">Back to Dashboard</Link>
           <button className="btn btn-outline" onClick={() => navigate('/services')} type="button">Book Another Service</button>

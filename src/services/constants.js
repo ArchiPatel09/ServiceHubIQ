@@ -28,14 +28,19 @@ export const CANADIAN_CITIES = [
   'Victoria, BC'
 ];
 
-export const TIME_SLOTS = [
-  '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-  '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
-];
+const formatHourSlot = (hour) => {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${displayHour}:00 ${period}`;
+};
+
+// Fix 2: expose the full booking day so emergency slots can be selected too.
+export const TIME_SLOTS = Array.from({ length: 18 }, (_, index) => formatHourSlot(index + 6));
 
 export const ROLES = {
   CUSTOMER: 'customer',
-  PROVIDER: 'provider'
+  PROVIDER: 'provider',
+  ADMIN: 'admin'
 };
 
 export const BOOKING_STATUS = {

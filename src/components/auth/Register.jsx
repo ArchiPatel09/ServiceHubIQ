@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { EMAIL_REGEX } from '../../utils/validation';
 import { SERVICES } from '../../services/constants';
-import AddressAutocomplete from '../shared/AddressAutocomplete';
+import AddressFields from '../shared/AddressFields';
 import ErrorMessage from '../shared/ErrorMessage';
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaMapMarkerAlt, FaTools } from 'react-icons/fa';
+import Modal from '../shared/Modal';
+import { getAddressFieldErrors } from '../../utils/addressValidation';
+import { FaUser, FaEnvelope, FaLock, FaPhoneAlt, FaMapMarkerAlt, FaTools, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -17,13 +19,24 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     phone: '',
-    address: '',
+    address: {
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: '',
+      formatted: ''
+    },
     provider_service: '',
     userType: 'customer',
     profile_image: ''
   });
 
   const [errors, setErrors] = useState({});
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,7 +55,7 @@ const Register = () => {
 
   const handleAddressSelect = (address) => {
     setFormData((prev) => ({ ...prev, address }));
-    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
+    if (errors.addressFields) setErrors((prev) => ({ ...prev, addressFields: null }));
   };
 
   const validateForm = () => {
@@ -70,6 +83,12 @@ const Register = () => {
       newErrors.provider_service = 'Please select a service';
     }
 
+    // Fix 6: block incomplete addresses before signup reaches the API.
+    const addressFieldErrors = getAddressFieldErrors(formData.address);
+    if (Object.keys(addressFieldErrors).length > 0) {
+      newErrors.addressFields = addressFieldErrors;
+    }
+
     return newErrors;
   };
 
@@ -87,7 +106,8 @@ const Register = () => {
         ...formData,
         email: formData.email.trim()
       });
-      navigate('/login', { replace: true });
+      setSuccessModalOpen(true);
+      setTimeout(() => navigate('/login', { replace: true }), 12000);
     } catch (error) {
       setErrors({ general: error.message || 'Registration failed. Please try again.' });
     }
@@ -135,7 +155,7 @@ const Register = () => {
 
           <div className="form-group">
             <label>
-              <FaPhone className="input-icon" />
+              <FaPhoneAlt className="input-icon" />
               Phone Number
             </label>
             <input
@@ -153,14 +173,25 @@ const Register = () => {
               <FaLock className="input-icon" />
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-              placeholder="Create a password (min. 6 characters)"
-            />
+            <div className="password-field">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                placeholder="Create a password (min. 6 characters)"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </div>
             <ErrorMessage message={errors.password} />
           </div>
 
@@ -169,14 +200,25 @@ const Register = () => {
               <FaLock className="input-icon" />
               Confirm Password
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
-              placeholder="Confirm your password"
-            />
+            <div className="password-field">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showConfirmPassword}
+              >
+                {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </div>
             <ErrorMessage message={errors.confirmPassword} />
           </div>
 
@@ -185,15 +227,11 @@ const Register = () => {
               <FaMapMarkerAlt className="input-icon" />
               Address
             </label>
-            <AddressAutocomplete
-              name="address"
+            <AddressFields
               value={formData.address}
-              onChange={handleChange}
-              onSelect={handleAddressSelect}
-              className="form-control"
-              placeholder="Enter your address"
+              onChange={handleAddressSelect}
+              errors={errors.addressFields || {}}
             />
-            <ErrorMessage message={errors.address} />
           </div>
 
           <div className="form-group">
@@ -253,6 +291,19 @@ const Register = () => {
           </p>
         </div>
       </div>
+
+      <Modal
+        open={successModalOpen}
+        title="Account Created"
+        onClose={() => setSuccessModalOpen(false)}
+        actions={
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/login', { replace: true })}>
+            Go to Sign In
+          </button>
+        }
+      >
+        <p>Your account was created successfully. We are redirecting you to sign in.</p>
+      </Modal>
     </div>
   );
 };

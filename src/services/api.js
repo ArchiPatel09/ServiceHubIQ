@@ -52,6 +52,8 @@ export const authAPI = {
   registerCustomer: (userData) => api.post('/auth/register/customer', userData),
   registerProvider: (userData) => api.post('/auth/register/provider', userData),
   login: (credentials) => api.post('/auth/login', credentials),
+  forgotPassword: (payload) => api.post('/auth/forgot-password', payload),
+  resetPassword: (payload) => api.post('/auth/reset-password', payload),
   me: () => api.get('/auth/me'),
   googleLoginUrl: (role, service) => {
     const params = new URLSearchParams();
@@ -80,6 +82,34 @@ export const userAPI = {
 export const providerAPI = {
   getMe: () => api.get('/providers/me'),
   updateMe: (payload) => api.put('/providers/me', payload)
+};
+
+// Task 4 - Provider Rating System
+export const ratingAPI = {
+  // Customer submits or updates a rating for their completed booking
+  submitRating: (payload) => api.post('/ratings', payload),
+  // Provider fetches their own aggregated rating profile (dashboard)
+  getMyRatingProfile: () => api.get('/ratings/my-profile'),
+  // Public - fetch any provider's stats (used on service cards)
+  getProviderStats: (providerId) => api.get(`/ratings/provider/${providerId}/stats`),
+  // Public - fetch a provider's recent reviews
+  getProviderReviews: (providerId, limit = 10) =>
+    api.get(`/ratings/provider/${providerId}/reviews`, { params: { limit } })
+};
+
+// Task 8 - Admin APIs
+export const adminAPI = {
+  getMetrics: () => api.get('/admin/metrics'),
+  getUsers: (role) => api.get('/admin/users', { params: role ? { role } : {} }),
+  getProviders: () => api.get('/admin/providers'),
+  createAdmin: (payload) => api.post('/admin/users/admins', payload),
+  suspendUser: (userId, isSuspended) => api.patch(`/admin/users/${userId}/suspend`, { isSuspended }),
+  approveProvider: (providerId, isProviderApproved) => api.patch(`/admin/providers/${providerId}/approve`, { isProviderApproved }),
+  verifyProvider: (providerId, isProviderVerified) => api.patch(`/admin/providers/${providerId}/verify`, { isProviderVerified }),
+  getBookings: () => api.get('/admin/bookings'),
+  cancelBooking: (bookingId) => api.patch(`/admin/bookings/${bookingId}/cancel`),
+  getRatings: () => api.get('/admin/ratings'),
+  removeRating: (ratingId) => api.patch(`/admin/ratings/${ratingId}/remove`)
 };
 
 export default api;

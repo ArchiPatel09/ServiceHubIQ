@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import AddressAutocomplete from './AddressAutocomplete';
+import AddressFields from './AddressFields';
+import ErrorMessage from './ErrorMessage';
 import { SERVICE_LABELS } from '../../services/constants';
+import { getAddressFieldErrors } from '../../utils/addressValidation';
 import {
   FaUser,
   FaEnvelope,
@@ -66,7 +68,15 @@ const Profile = () => {
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    address: user?.address || '',
+    address: user?.address || {
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: '',
+      formatted: ''
+    },
     profile_image: user?.profile_image || ''
   });
 
@@ -75,7 +85,15 @@ const Profile = () => {
       name: user?.name || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      address: user?.address || '',
+      address: user?.address || {
+        line1: '',
+        line2: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: '',
+        formatted: ''
+      },
       profile_image: user?.profile_image || ''
     });
   }, [user]);
@@ -103,6 +121,8 @@ const Profile = () => {
     const e = {};
     if (!formData.name.trim()) e.name = 'Name is required.';
     if (!isValidPhone(formData.phone)) e.phone = 'Phone should be 10-15 digits.';
+    const addressFieldErrors = getAddressFieldErrors(formData.address);
+    if (Object.keys(addressFieldErrors).length > 0) e.addressFields = addressFieldErrors;
     return e;
   };
 
@@ -116,7 +136,7 @@ const Profile = () => {
 
   const handleAddressSelect = (address) => {
     setFormData((prev) => ({ ...prev, address }));
-    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
+    if (errors.addressFields) setErrors((prev) => ({ ...prev, addressFields: null }));
   };
 
   const handleCancel = () => {
@@ -127,7 +147,15 @@ const Profile = () => {
       name: user?.name || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      address: user?.address || '',
+      address: user?.address || {
+        line1: '',
+        line2: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: '',
+        formatted: ''
+      },
       profile_image: user?.profile_image || ''
     });
   };
@@ -260,11 +288,12 @@ const Profile = () => {
               )}
             </div>
 
-            {status.msg && (
-              <div className={`alert ${status.type === 'success' ? 'alert-success' : 'alert-danger'}`} style={{ marginTop: 12 }}>
+            {status.msg && status.type === 'success' && (
+              <div className={`alert profile-status-alert ${status.type === 'success' ? 'alert-success' : 'alert-danger'}`}>
                 {status.type === 'success' ? <FaCheckCircle /> : <FaExclamationTriangle />} {status.msg}
               </div>
             )}
+            <ErrorMessage message={status.type === 'error' ? status.msg : ''} className="profile-status-alert" />
 
             <form onSubmit={handleSubmit} className="profile-form">
               <div className="form-grid">
@@ -279,7 +308,7 @@ const Profile = () => {
                     disabled={!isEditing || saving}
                     required
                   />
-                  {errors.name && <div className="error-text">{errors.name}</div>}
+                  <ErrorMessage message={errors.name} />
                 </div>
 
                 <div className="form-group">
@@ -299,19 +328,16 @@ const Profile = () => {
                     disabled={!isEditing || saving}
                     placeholder="(optional)"
                   />
-                  {errors.phone && <div className="error-text">{errors.phone}</div>}
+                  <ErrorMessage message={errors.phone} />
                 </div>
 
                 <div className="form-group">
                   <label><FaMapMarkerAlt className="input-icon" /> Address</label>
-                  <AddressAutocomplete
-                    name="address"
+                  <AddressFields
                     value={formData.address}
-                    onChange={handleChange}
-                    onSelect={handleAddressSelect}
-                    className="form-control"
+                    onChange={handleAddressSelect}
                     disabled={!isEditing || saving}
-                    placeholder="(optional)"
+                    errors={errors.addressFields || {}}
                   />
                 </div>
 

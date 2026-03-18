@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
 import { EMAIL_REGEX } from '../../utils/validation';
 import { SERVICES } from '../../services/constants';
 import ErrorMessage from '../shared/ErrorMessage';
-import { FaEnvelope, FaLock, FaUser, FaTools, FaGoogle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaUser, FaTools, FaGoogle, FaEye, FaEyeSlash, FaShieldAlt } from 'react-icons/fa';
+
+const getDashboardPathForRole = (role) => {
+  if (role === 'provider') return '/provider-dashboard';
+  if (role === 'admin') return '/admin-dashboard';
+  return '/customer-dashboard';
+};
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,20 +28,24 @@ const Login = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const oauthToken = searchParams.get('oauthToken');
+    const oauthError = searchParams.get('oauthError');
+
+    if (oauthError) {
+      setErrors({ general: decodeURIComponent(oauthError) });
+      return;
+    }
+
     if (!oauthToken) return;
 
     const complete = async () => {
       try {
         setLoading(true);
         const oauthUser = await completeOAuthLogin(oauthToken);
-        if (oauthUser?.role === 'provider') {
-          navigate('/provider-dashboard', { replace: true });
-        } else {
-          navigate('/customer-dashboard', { replace: true });
-        }
+        navigate(getDashboardPathForRole(oauthUser?.role), { replace: true });
       } catch (error) {
         setErrors({ general: error.message || 'Google login failed' });
       } finally {
@@ -49,7 +59,7 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => {
-      if (name === 'role' && value === 'customer') {
+      if (name === 'role' && value !== 'provider') {
         return { ...prev, role: value, provider_service: '' };
       }
       return { ...prev, [name]: value };
@@ -77,6 +87,7 @@ const Login = () => {
       newErrors.role = 'Please select a role';
     }
 
+    // Fix: provider service is a validation input and must match the stored provider profile.
     if (formData.role === 'provider' && !formData.provider_service) {
       newErrors.provider_service = 'Please select your service';
     }
@@ -95,7 +106,7 @@ const Login = () => {
 
     try {
       setLoading(true);
-      await login(
+      const loggedInUser = await login(
         formData.email.trim(),
         formData.password,
         formData.role,
@@ -108,11 +119,8 @@ const Login = () => {
         return;
       }
 
-      if (formData.role === 'provider') {
-        navigate('/provider-dashboard');
-      } else {
-        navigate('/customer-dashboard');
-      }
+      // Fix: post-login navigation is based on the authenticated user's stored role.
+      navigate(getDashboardPathForRole(loggedInUser?.role));
     } catch (error) {
       setErrors({ general: error.message || 'Invalid credentials. Please try again.' });
     } finally {
@@ -121,6 +129,13 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
+    if (!formData.role) {
+      setErrors({ role: 'Please select a role to continue with Google' });
+      return;
+    }
+
+    // Fix: existing users still validate against DB role/service, while new Google users
+    // can use the selected values only during first-time signup.
     if (formData.role === 'provider' && !formData.provider_service) {
       setErrors({ provider_service: 'Please select your service to continue with Google' });
       return;
@@ -156,10 +171,10 @@ const Login = () => {
 
           <div className="form-group">
             <label>Password</label>
-            <div className="input-group">
+            <div className="input-group has-toggle">
               <FaLock className="input-icon" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
@@ -167,8 +182,24 @@ const Login = () => {
                 placeholder="Enter your password"
                 disabled={loading}
               />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                disabled={loading}
+              >
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
+              </button>
             </div>
             <ErrorMessage message={errors.password} />
+          </div>
+
+          <div className="form-options">
+            <Link to="/forgot-password" className="forgot-password">
+              Forgot password?
+            </Link>
           </div>
 
           <div className="form-group">
@@ -201,6 +232,21 @@ const Login = () => {
                 <label htmlFor="provider">
                   <FaTools />
                   <span>Provider</span>
+                </label>
+              </div>
+
+              <div className={`role-option ${formData.role === 'admin' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  id="admin"
+                  name="role"
+                  value="admin"
+                  checked={formData.role === 'admin'}
+                  onChange={handleChange}
+                />
+                <label htmlFor="admin">
+                  <FaShieldAlt />
+                  <span>Admin</span>
                 </label>
               </div>
             </div>

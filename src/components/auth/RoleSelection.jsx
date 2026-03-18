@@ -105,7 +105,7 @@ const RoleSelection = () => {
         </div>
 
         {selectedRole === 'provider' && (
-          <div className="form-group" style={{ maxWidth: 420, margin: '0 auto 24px' }}>
+          <div className="form-group role-service-select">
             <label>Select Your Service</label>
             <select
               className="form-control"

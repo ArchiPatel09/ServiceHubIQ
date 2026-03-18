@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaSearch, FaStar, FaCalendarAlt, FaTools, FaTimes } from 'react-icons/fa';
-import { bookingAPI, extractApiError } from '../../services/api';
+import { FaSearch, FaStar, FaCalendarAlt, FaTools } from 'react-icons/fa';
+import { bookingAPI, ratingAPI, extractApiError } from '../../services/api';
 import { formatServicePrice } from '../../utils/servicePricing';
 import { SERVICE_LABELS } from '../../services/constants';
+import ErrorMessage from '../shared/ErrorMessage';
+import Modal from '../shared/Modal';
 
 const normalizeStatus = (status) => (status || '').toLowerCase();
 
@@ -10,19 +12,18 @@ const statusToUi = (status) => {
   if (status === 'Pending') return 'Upcoming';
   if (status === 'In Progress') return 'In Progress';
   if (status === 'Completed') return 'Completed';
+  if (status === 'Cancelled') return 'Cancelled';
   return status || 'Unknown';
 };
 
 const formatDate = (iso) => {
   if (!iso) return '-';
-  const d = new Date(iso);
-  return d.toLocaleDateString();
+  return new Date(iso).toLocaleDateString();
 };
 
 const formatTime = (iso) => {
   if (!iso) return '-';
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 const BookingHistory = () => {
@@ -31,10 +32,14 @@ const BookingHistory = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Review modal state
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [selectedBookingId, setSelectedBookingId] = useState('');
-  const [reviewForm, setReviewForm] = useState({ rating: 5, review: '' });
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, reviewText: '' });
   const [savingReview, setSavingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -43,21 +48,21 @@ const BookingHistory = () => {
         const response = await bookingAPI.getCustomerBookings();
         const data = response?.data?.data || [];
 
-        const mapped = data.map((booking) => {
-          const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
-          return {
-            id: booking._id,
-            service: serviceLabel,
-            provider: booking.providerId?.name || 'Assigned Provider',
-            date: formatDate(booking.date),
-            time: formatTime(booking.date),
-            status: statusToUi(booking.status),
-            rawStatus: booking.status,
-            price: formatServicePrice(booking.serviceType, booking.price),
-            rating: typeof booking.rating === 'number' ? booking.rating : null,
-            review: booking.review || null
-          };
-        });
+        const mapped = data.map((booking) => ({
+          id: booking._id,
+          providerId: booking.providerId,
+          service: SERVICE_LABELS[booking.serviceType] || booking.serviceType,
+          provider: booking.providerId?.name || 'Assigned Provider',
+          date: formatDate(booking.date),
+          time: formatTime(booking.date),
+          status: statusToUi(booking.status),
+          rawStatus: booking.status,
+          price: formatServicePrice(booking.serviceType, booking.price),
+          rating: typeof booking.rating === 'number' ? booking.rating : null,
+          reviewText: booking.review || null,
+          isEmergencyService: booking.isEmergencyService || false,
+          extraFee: booking.extraFee || 0
+        }));
 
         setBookings(mapped);
       } catch (err) {
@@ -72,17 +77,10 @@ const BookingHistory = () => {
 
   const filteredBookings = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-
-    return bookings.filter((booking) => {
-      if (filter !== 'all' && normalizeStatus(booking.status) !== filter) {
-        return false;
-      }
-
+    return bookings.filter((b) => {
+      if (filter !== 'all' && normalizeStatus(b.status) !== filter) return false;
       if (term) {
-        return (
-          (booking.service || '').toLowerCase().includes(term) ||
-          (booking.provider || '').toLowerCase().includes(term)
-        );
+        return b.service.toLowerCase().includes(term) || b.provider.toLowerCase().includes(term);
       }
       return true;
     });
@@ -96,6 +94,8 @@ const BookingHistory = () => {
         return 'badge-warning';
       case 'upcoming':
         return 'badge-secondary';
+      case 'cancelled':
+        return 'badge-danger';
       default:
         return 'badge-secondary';
     }
@@ -105,51 +105,59 @@ const BookingHistory = () => {
     const total = bookings.length;
     const completed = bookings.filter((b) => normalizeStatus(b.status) === 'completed').length;
     const rated = bookings.filter((b) => typeof b.rating === 'number');
-
     const avgRating = rated.length
       ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
       : '-';
-
     return { total, completed, avgRating };
   }, [bookings]);
 
   const openReviewModal = (booking) => {
-    setSelectedBookingId(booking.id);
-    setReviewForm({
-      rating: booking.rating || 5,
-      review: booking.review || ''
-    });
+    setSelectedBooking(booking);
+    setReviewForm({ rating: booking.rating || 5, reviewText: booking.reviewText || '' });
+    setReviewError('');
+    setReviewSuccess('');
     setReviewModalOpen(true);
   };
 
   const closeReviewModal = () => {
     setReviewModalOpen(false);
-    setSelectedBookingId('');
-    setReviewForm({ rating: 5, review: '' });
+    setSelectedBooking(null);
+    setReviewForm({ rating: 5, reviewText: '' });
+    setReviewError('');
+    setReviewSuccess('');
   };
 
   const saveReview = async () => {
     const ratingValue = Number(reviewForm.rating);
-    const reviewText = reviewForm.review.trim();
+    const reviewText = reviewForm.reviewText.trim();
+
+    if (!Number.isInteger(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+      setReviewError('Please select a rating between 1 and 5.');
+      return;
+    }
 
     try {
       setSavingReview(true);
-      setError('');
-      await bookingAPI.submitReview(selectedBookingId, {
+      setReviewError('');
+
+      await ratingAPI.submitRating({
+        bookingId: selectedBooking.id,
         rating: ratingValue,
-        review: reviewText
+        reviewText
       });
 
       setBookings((prev) =>
-        prev.map((booking) =>
-          booking.id === selectedBookingId
-            ? { ...booking, rating: ratingValue, review: reviewText || null }
-            : booking
+        prev.map((b) =>
+          b.id === selectedBooking.id
+            ? { ...b, rating: ratingValue, reviewText: reviewText || null }
+            : b
         )
       );
-      closeReviewModal();
+
+      setReviewSuccess('Your review has been saved!');
+      setTimeout(closeReviewModal, 1200);
     } catch (err) {
-      setError(extractApiError(err, 'Failed to save review'));
+      setReviewError(extractApiError(err, 'Failed to save review. Please try again.'));
     } finally {
       setSavingReview(false);
     }
@@ -189,7 +197,7 @@ const BookingHistory = () => {
         <p>View and manage your past and upcoming service bookings</p>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      <ErrorMessage message={error} className="form-error-global" />
 
       <div className="history-controls">
         <div className="search-box">
@@ -204,17 +212,20 @@ const BookingHistory = () => {
         </div>
 
         <div className="filter-buttons">
-          <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All</button>
-          <button className={`filter-btn ${filter === 'completed' ? 'active' : ''}`} onClick={() => setFilter('completed')}>Completed</button>
-          <button className={`filter-btn ${filter === 'upcoming' ? 'active' : ''}`} onClick={() => setFilter('upcoming')}>Upcoming</button>
-          <button className={`filter-btn ${filter === 'in progress' ? 'active' : ''}`} onClick={() => setFilter('in progress')}>In Progress</button>
+          {['all', 'completed', 'upcoming', 'in progress', 'cancelled'].map((f) => (
+            <button
+              key={f}
+              className={`filter-btn ${filter === f ? 'active' : ''}`}
+              onClick={() => setFilter(f)}
+            >
+              {f === 'all' ? 'All' : f.replace(/\b\w/g, (c) => c.toUpperCase())}
+            </button>
+          ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="empty-history">
-          <h3>Loading bookings...</h3>
-        </div>
+        <div className="empty-history"><h3>Loading bookings...</h3></div>
       ) : filteredBookings.length > 0 ? (
         <div className="bookings-list">
           {filteredBookings.map((booking) => (
@@ -225,39 +236,46 @@ const BookingHistory = () => {
                   <div>
                     <h3>{booking.service}</h3>
                     <p className="provider-name">by {booking.provider}</p>
+                    {booking.isEmergencyService && (
+                      <span className="booking-emergency-badge">
+                        Emergency Service (+${booking.extraFee})
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className={`booking-status ${getStatusBadgeClass(booking.status)}`}>{booking.status}</div>
+                <div className={`booking-status ${getStatusBadgeClass(booking.status)}`}>
+                  {booking.status}
+                </div>
               </div>
 
               <div className="booking-details">
                 <div className="detail-item">
                   <FaCalendarAlt className="detail-icon" />
-                  <div>
-                    <strong>Date:</strong> {booking.date} at {booking.time}
-                  </div>
+                  <div><strong>Date:</strong> {booking.date} at {booking.time}</div>
                 </div>
                 <div className="detail-item">
                   <strong>Price:</strong> {booking.price}
                 </div>
                 {typeof booking.rating === 'number' && (
                   <div className="detail-item booking-rating">
-                    <div>
-                      <strong>Rating:</strong> {renderStars(booking.rating)}
-                    </div>
+                    <strong>Your Rating:</strong> {renderStars(booking.rating)}
                   </div>
                 )}
               </div>
 
-              {booking.review && (
+              {booking.reviewText && (
                 <div className="booking-review">
-                  <strong>Your review:</strong> {booking.review}
+                  <strong>Your review:</strong> {booking.reviewText}
                 </div>
               )}
 
               {normalizeStatus(booking.status) === 'completed' && (
                 <div className="booking-actions">
-                  <button className="btn btn-primary btn-sm" type="button" onClick={() => openReviewModal(booking)}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    type="button"
+                    onClick={() => openReviewModal(booking)}
+                  >
                     {booking.rating ? 'Edit Review' : 'Rate & Review'}
                   </button>
                 </div>
@@ -278,42 +296,65 @@ const BookingHistory = () => {
         <div className="stat-item"><h4>Average Rating</h4><p className="stat-number">{stats.avgRating}</p></div>
       </div>
 
-      {reviewModalOpen && (
-        <div className="review-modal-overlay" role="dialog" aria-modal="true">
-          <div className="review-modal">
-            <div className="review-modal-header">
-              <h3>Rate Your Service</h3>
-              <button type="button" className="review-modal-close" onClick={closeReviewModal}>
-                <FaTimes />
-              </button>
-            </div>
+      <Modal
+        open={reviewModalOpen}
+        title="Rate Your Service"
+        onClose={closeReviewModal}
+        actions={
+          <>
+            <button type="button" className="btn btn-outline" onClick={closeReviewModal}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={saveReview}
+              disabled={savingReview}
+            >
+              {savingReview ? 'Saving...' : 'Save Review'}
+            </button>
+          </>
+        }
+      >
+        <p className="review-modal-meta">
+          <strong>{selectedBooking?.service}</strong> - by {selectedBooking?.provider}
+        </p>
 
-            <div className="form-group">
-              <label>Rating</label>
-              {renderStars(reviewForm.rating, true, (star) => setReviewForm((prev) => ({ ...prev, rating: star })))}
-            </div>
+        <ErrorMessage message={reviewError} />
+        {reviewSuccess && (
+          <p className="review-success-text">{reviewSuccess}</p>
+        )}
 
-            <div className="form-group">
-              <label htmlFor="review-textarea">Review</label>
-              <textarea
-                id="review-textarea"
-                rows={4}
-                className="form-control"
-                placeholder="Write your review about this service"
-                value={reviewForm.review}
-                onChange={(e) => setReviewForm((prev) => ({ ...prev, review: e.target.value }))}
-              />
-            </div>
-
-            <div className="review-modal-actions">
-              <button type="button" className="btn btn-outline" onClick={closeReviewModal}>Cancel</button>
-              <button type="button" className="btn btn-primary" onClick={saveReview} disabled={savingReview}>
-                {savingReview ? 'Saving...' : 'Save Review'}
-              </button>
-            </div>
-          </div>
+        <div className="form-group">
+          <label><strong>Rating</strong></label>
+          {renderStars(
+            reviewForm.rating,
+            true,
+            (star) => setReviewForm((prev) => ({ ...prev, rating: star }))
+          )}
+          <p className="rating-helper-text">
+            {reviewForm.rating} / 5 stars selected
+          </p>
         </div>
-      )}
+
+        <div className="form-group">
+          <label htmlFor="review-textarea"><strong>Review</strong> (optional)</label>
+          <textarea
+            id="review-textarea"
+            rows={4}
+            className="form-control"
+            placeholder="Share your experience with this service..."
+            value={reviewForm.reviewText}
+            onChange={(e) =>
+              setReviewForm((prev) => ({ ...prev, reviewText: e.target.value }))
+            }
+            maxLength={1000}
+          />
+          <p className="review-char-count">
+            {reviewForm.reviewText.length}/1000
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };

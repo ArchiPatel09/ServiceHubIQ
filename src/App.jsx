@@ -10,12 +10,15 @@ import Footer from './components/layout/Footer';
 import HomePage from './components/home/HomePage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 import ServicesPage from './components/customer/ServicesPage';
 import ServiceBooking from './components/customer/ServiceBooking';
 import BookingHistory from './components/customer/BookingHistory';
 import Profile from './components/shared/Profile';
 import CustomerDashboard from './components/customer/CustomerDashboard';
 import ProviderDashboard from './components/provider/ProviderDashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
 import Settings from './components/shared/Settings';
 import NotFound from './components/shared/NotFound';
 import BookingConfirmation from './components/customer/BookingConfirmation';
@@ -28,6 +31,10 @@ function RoleBasedRedirect() {
 
   if (user.role === 'provider') {
     return <Navigate to="/provider-dashboard" replace />;
+  }
+
+  if (user.role === 'admin') {
+    return <Navigate to="/admin-dashboard" replace />;
   }
 
   return <Navigate to="/customer-dashboard" replace />;
@@ -44,6 +51,8 @@ function AppShell() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route
             path="/dashboard"
@@ -68,6 +77,15 @@ function AppShell() {
             element={
               <ProtectedRoute requiredRole="provider">
                 <ProviderDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />
