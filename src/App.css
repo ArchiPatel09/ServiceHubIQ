@@ -7289,3 +7289,477 @@ input:checked + .slider:before {
 .app.theme-dark .time-slot-meta-emergency {
   color: #fbbf24 !important;
 }
+
+/* ===== LIVE TRACKING + PAYMENTS ===== */
+.live-tracking-map-shell {
+  margin-top: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: rgba(248, 250, 252, 0.95);
+}
+
+.live-tracking-map-canvas {
+  width: 100%;
+  min-height: 320px;
+}
+
+.tracking-map-fallback {
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.04);
+  color: #475569;
+}
+
+.booking-payment-panel,
+.booking-tracking-panel {
+  margin-top: 1.5rem;
+}
+
+.payment-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.payment-status-unpaid,
+.payment-status-failed,
+.payment-status-cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.payment-status-pending {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.22);
+}
+
+.payment-status-paid {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.22);
+}
+
+.payment-total-copy,
+.payment-panel-note,
+.tracking-panel-copy p,
+.tracking-timestamp {
+  color: var(--text-secondary, #64748b);
+}
+
+.tracking-panel-copy {
+  margin-top: 1rem;
+}
+
+.tracking-eta {
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.payment-status-page {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.payment-status-card {
+  background: var(--surface-primary, #ffffff);
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.25));
+  border-radius: 1.5rem;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
+  padding: 2rem;
+}
+
+.payment-status-card h1 {
+  margin-bottom: 0.75rem;
+}
+
+.payment-status-summary {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.payment-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.provider-tracking-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background: rgba(239, 246, 255, 0.8);
+}
+
+.provider-tracking-banner h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.provider-tracking-banner p {
+  margin: 0;
+  color: var(--text-secondary, #64748b);
+}
+
+.provider-job-actions-extended {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.app.theme-dark .live-tracking-map-shell,
+.app.theme-dark .payment-status-card {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(96, 165, 250, 0.18);
+  box-shadow: 0 22px 55px rgba(2, 6, 23, 0.45);
+}
+
+.app.theme-dark .tracking-map-fallback {
+  background: rgba(30, 41, 59, 0.88);
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.app.theme-dark .payment-total-copy,
+.app.theme-dark .payment-panel-note,
+.app.theme-dark .tracking-panel-copy p,
+.app.theme-dark .tracking-timestamp,
+.app.theme-dark .provider-tracking-banner p {
+  color: rgba(203, 213, 225, 0.82);
+}
+
+.app.theme-dark .tracking-eta,
+.app.theme-dark .payment-status-card h1 {
+  color: rgba(248, 250, 252, 0.96);
+}
+
+.app.theme-dark .provider-tracking-banner {
+  background: rgba(30, 41, 59, 0.88);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.app.theme-dark .payment-status-unpaid,
+.app.theme-dark .payment-status-failed,
+.app.theme-dark .payment-status-cancelled {
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.42);
+}
+
+.app.theme-dark .payment-status-pending {
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.42);
+}
+
+.app.theme-dark .payment-status-paid {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.42);
+}
+
+@media (max-width: 768px) {
+  .live-tracking-map-canvas {
+    min-height: 260px;
+  }
+
+  .provider-job-actions-extended {
+    align-items: stretch;
+  }
+
+  .payment-summary-row,
+  .payment-status-actions,
+  .provider-tracking-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ===== BOOKING HISTORY ACCORDION ===== */
+.history-accordion-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.booking-history-card {
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: var(--surface-primary, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.booking-history-summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.35rem;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.booking-history-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.booking-history-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.95rem;
+}
+
+.booking-history-summary-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.booking-history-summary-side {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.accordion-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.booking-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.history-status-pending {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.22);
+}
+
+.history-status-progress {
+  background: rgba(59, 130, 246, 0.14);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.history-status-completed {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.22);
+}
+
+.history-status-cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.history-accordion-body {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+
+.history-accordion-body.expanded {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.history-accordion-inner {
+  padding: 0 1.35rem 1.35rem;
+}
+
+.booking-history-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.booking-history-detail-card {
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.booking-history-detail-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+}
+
+.booking-history-detail-card p,
+.booking-history-detail-card .detail-item {
+  margin-bottom: 0.65rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.booking-history-detail-card strong,
+.history-success-text,
+.history-expired-note {
+  color: var(--text-primary, #0f172a);
+}
+
+.booking-rating-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.booking-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.history-cancel-btn {
+  border-color: rgba(239, 68, 68, 0.32);
+  color: #b91c1c;
+}
+
+.history-success-text {
+  margin: 0.75rem 0 0;
+  color: #047857;
+  font-weight: 600;
+}
+
+.history-expired-note {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.booking-history-tracking-shell {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.app.theme-dark .booking-history-card {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(96, 165, 250, 0.14);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.42);
+}
+
+.app.theme-dark .booking-history-summary-meta,
+.app.theme-dark .booking-history-detail-card p,
+.app.theme-dark .booking-history-detail-card .detail-item {
+  color: rgba(203, 213, 225, 0.82);
+}
+
+.app.theme-dark .booking-history-detail-card {
+  background: rgba(30, 41, 59, 0.84);
+  border-color: rgba(96, 165, 250, 0.14);
+}
+
+.app.theme-dark .booking-history-detail-card strong,
+.app.theme-dark .history-success-text,
+.app.theme-dark .history-expired-note {
+  color: rgba(248, 250, 252, 0.94);
+}
+
+.app.theme-dark .accordion-toggle-icon {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.app.theme-dark .history-status-pending {
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.42);
+}
+
+.app.theme-dark .history-status-progress {
+  color: #93c5fd;
+  background: rgba(30, 64, 175, 0.36);
+}
+
+.app.theme-dark .history-status-completed {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.42);
+}
+
+.app.theme-dark .history-status-cancelled {
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.42);
+}
+
+.app.theme-dark .history-cancel-btn {
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+
+@media (max-width: 1024px) {
+  .booking-history-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-history-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-history-summary-side,
+  .booking-history-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .history-accordion-inner,
+  .booking-history-summary {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

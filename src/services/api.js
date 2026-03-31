@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+export const SOCKET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -68,8 +69,16 @@ export const bookingAPI = {
   createBooking: (bookingData) => api.post('/bookings', bookingData),
   getCustomerBookings: () => api.get('/bookings/customer'),
   getProviderBookings: () => api.get('/bookings/provider'),
+  getTracking: (bookingId) => api.get(`/bookings/${bookingId}/tracking`),
+  updateLiveLocation: (bookingId, coords) => api.patch(`/bookings/${bookingId}/tracking/location`, coords),
+  cancelBooking: (bookingId) => api.patch(`/bookings/${bookingId}/cancel`),
   updateBookingStatus: (bookingId, status) => api.patch(`/bookings/${bookingId}/status`, { status }),
   submitReview: (bookingId, payload) => api.patch(`/bookings/${bookingId}/review`, payload)
+};
+
+export const paymentAPI = {
+  createCheckoutSession: (bookingId) => api.post('/payments/create-checkout-session', { bookingId }),
+  syncCheckoutSession: (sessionId) => api.post('/payments/sync-checkout-session', { sessionId })
 };
 
 export const userAPI = {
@@ -84,20 +93,14 @@ export const providerAPI = {
   updateMe: (payload) => api.put('/providers/me', payload)
 };
 
-// Task 4 - Provider Rating System
 export const ratingAPI = {
-  // Customer submits or updates a rating for their completed booking
   submitRating: (payload) => api.post('/ratings', payload),
-  // Provider fetches their own aggregated rating profile (dashboard)
   getMyRatingProfile: () => api.get('/ratings/my-profile'),
-  // Public - fetch any provider's stats (used on service cards)
   getProviderStats: (providerId) => api.get(`/ratings/provider/${providerId}/stats`),
-  // Public - fetch a provider's recent reviews
   getProviderReviews: (providerId, limit = 10) =>
     api.get(`/ratings/provider/${providerId}/reviews`, { params: { limit } })
 };
 
-// Task 8 - Admin APIs
 export const adminAPI = {
   getMetrics: () => api.get('/admin/metrics'),
   getUsers: (role) => api.get('/admin/users', { params: role ? { role } : {} }),

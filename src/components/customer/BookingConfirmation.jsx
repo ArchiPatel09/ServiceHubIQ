@@ -1,11 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FaCheckCircle, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaTools, FaReceipt } from 'react-icons/fa';
-import { bookingAPI, extractApiError } from '../../services/api';
+import { io } from 'socket.io-client';
+import {
+  FaCheckCircle,
+  FaCalendarAlt,
+  FaClock,
+  FaMapMarkerAlt,
+  FaTools,
+  FaReceipt,
+  FaCreditCard,
+  FaMapMarkedAlt,
+  FaSyncAlt
+} from 'react-icons/fa';
+import { bookingAPI, extractApiError, paymentAPI, SOCKET_BASE_URL } from '../../services/api';
 import { formatServicePrice } from '../../utils/servicePricing';
 import { SERVICE_LABELS } from '../../services/constants';
 import { formatAddress } from '../../utils/address';
 import ErrorMessage from '../shared/ErrorMessage';
+import LiveTrackingMap from '../shared/LiveTrackingMap';
+
+const TRACKABLE_STATUSES = ['Pending', 'In Progress'];
+const PAYMENT_LABELS = {
+  unpaid: 'Unpaid',
+  pending: 'Payment Pending',
+  paid: 'Paid',
+  failed: 'Payment Failed',
+  cancelled: 'Payment Cancelled'
+};
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
@@ -15,6 +36,15 @@ const BookingConfirmation = () => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const [creatingCheckout, setCreatingCheckout] = useState(false);
+  const [tracking, setTracking] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
+  const [etaText, setEtaText] = useState('');
+
+  const socketRef = useRef(null);
+  const pollingRef = useRef(null);
 
   useEffect(() => {
     const loadBooking = async () => {
@@ -48,6 +78,11 @@ const BookingConfirmation = () => {
     if (!booking) return null;
     const dateObj = booking.date ? new Date(booking.date) : null;
     const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
+    const basePrice = typeof booking.price === 'number' ? booking.price : null;
+    const totalAmount = typeof booking.totalAmount === 'number'
+      ? booking.totalAmount
+      : (basePrice || 0) + (booking.extraFee || 0);
+
     return {
       id: booking._id,
       service: serviceLabel,
@@ -56,11 +91,140 @@ const BookingConfirmation = () => {
       time: dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
       address: booking.address,
       status: booking.status,
+      basePrice,
       price: formatServicePrice(booking.serviceType, booking.price),
+      totalAmount,
+      paymentStatus: booking.paymentStatus || 'unpaid',
+      paymentPaidAt: booking.paymentPaidAt ? new Date(booking.paymentPaidAt).toLocaleString() : '',
       isEmergencyService: booking.isEmergencyService || false,
       extraFee: booking.extraFee || 0
     };
   }, [booking]);
+
+  useEffect(() => {
+    if (!booking?._id || !TRACKABLE_STATUSES.includes(booking.status)) {
+      setTracking(null);
+      setTrackingError('');
+      setEtaText('');
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      return undefined;
+    }
+
+    let isMounted = true;
+    const token = localStorage.getItem('token');
+
+    const clearPolling = () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+
+    const loadTracking = async (silent = false) => {
+      try {
+        if (!silent) setTrackingLoading(true);
+        const response = await bookingAPI.getTracking(booking._id);
+        if (!isMounted) return;
+        const trackingPayload = response?.data?.data || null;
+        setTracking(trackingPayload);
+        if (trackingPayload?.provider?.location) {
+          setTrackingError('');
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setTrackingError(extractApiError(err, 'Live tracking is not available yet.'));
+      } finally {
+        if (isMounted && !silent) {
+          setTrackingLoading(false);
+        }
+      }
+    };
+
+    const startPolling = () => {
+      if (pollingRef.current) return;
+      pollingRef.current = setInterval(() => {
+        loadTracking(true);
+      }, 5000);
+    };
+
+    loadTracking();
+    // Keep polling until at least one provider location arrives. This covers the case where
+    // the customer screen opens before the provider starts sharing.
+    startPolling();
+
+    if (token) {
+      const socket = io(SOCKET_BASE_URL, {
+        auth: { token },
+        transports: ['websocket', 'polling']
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        socket.emit('joinBookingRoom', { bookingId: booking._id }, (ack) => {
+          if (!isMounted) return;
+          if (ack?.success && ack.data) {
+            setTracking(ack.data);
+            if (ack.data.provider?.location) {
+              setTrackingError('');
+              clearPolling();
+            }
+          }
+        });
+      });
+
+      socket.on('locationUpdate', (payload) => {
+        if (!isMounted) return;
+        setTracking(payload);
+        setTrackingError('');
+        clearPolling();
+      });
+
+      socket.on('connect_error', () => {
+        if (!isMounted) return;
+        setTrackingError('Real-time connection is unavailable. Refreshing location automatically instead.');
+      });
+    }
+
+    return () => {
+      isMounted = false;
+      clearPolling();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [booking?._id, booking?.status]);
+
+  const handleCheckout = async () => {
+    if (!booking?._id) return;
+
+    try {
+      setCreatingCheckout(true);
+      setPaymentError('');
+      const response = await paymentAPI.createCheckoutSession(booking._id);
+      const checkout = response?.data?.data;
+      setBooking((prev) => (prev ? { ...prev, paymentStatus: checkout?.paymentStatus || 'pending' } : prev));
+
+      if (checkout?.url) {
+        window.location.assign(checkout.url);
+        return;
+      }
+
+      throw new Error('Stripe checkout URL was not returned');
+    } catch (err) {
+      setPaymentError(extractApiError(err, 'Could not start payment checkout.'));
+    } finally {
+      setCreatingCheckout(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -103,6 +267,8 @@ const BookingConfirmation = () => {
     );
   }
 
+  const destinationAddress = formatAddress(formatted.address);
+
   return (
     <div className="booking-confirmation-page">
       <div className="booking-container">
@@ -121,13 +287,72 @@ const BookingConfirmation = () => {
           <div className="summary-item"><strong>Provider:</strong> {formatted.provider}</div>
           <div className="summary-item"><strong><FaCalendarAlt /> Date:</strong> {formatted.date}</div>
           <div className="summary-item"><strong><FaClock /> Time:</strong> {formatted.time}</div>
-          <div className="summary-item"><strong><FaMapMarkerAlt /> Address:</strong> {formatAddress(formatted.address) || '-'}</div>
-          <div className="summary-item"><strong>Price:</strong> {formatted.price}</div>
+          <div className="summary-item"><strong><FaMapMarkerAlt /> Address:</strong> {destinationAddress || '-'}</div>
+          <div className="summary-item"><strong>Base Price:</strong> {formatted.price}</div>
           {formatted.isEmergencyService && (
             <div className="summary-item"><strong>Emergency Fee:</strong> +${formatted.extraFee}</div>
           )}
+          <div className="summary-item"><strong>Total:</strong> ${formatted.totalAmount}</div>
           <div className="summary-item"><strong>Status:</strong> {formatted.status}</div>
         </div>
+
+        <div className="booking-summary booking-payment-panel">
+          <h3 className="booking-confirmation-summary-title"><FaCreditCard /> Payment</h3>
+          <div className="payment-summary-row">
+            <span className={`payment-status-badge payment-status-${formatted.paymentStatus}`}>
+              {PAYMENT_LABELS[formatted.paymentStatus] || formatted.paymentStatus}
+            </span>
+            <span className="payment-total-copy">Amount due: ${formatted.totalAmount}</span>
+          </div>
+          {formatted.paymentPaidAt && (
+            <p className="payment-panel-note">Paid on {formatted.paymentPaidAt}</p>
+          )}
+          {!formatted.paymentPaidAt && (
+            <p className="payment-panel-note">Payments are processed securely with Stripe Checkout.</p>
+          )}
+          <ErrorMessage message={paymentError} />
+          {formatted.paymentStatus !== 'paid' && (
+            <button className="btn btn-primary" type="button" onClick={handleCheckout} disabled={creatingCheckout}>
+              {creatingCheckout ? 'Redirecting to Stripe...' : 'Pay Now'}
+            </button>
+          )}
+        </div>
+
+        {TRACKABLE_STATUSES.includes(formatted.status) && (
+          <div className="booking-summary booking-tracking-panel">
+            <div className="payment-summary-row">
+              <h3 className="booking-confirmation-summary-title"><FaMapMarkedAlt /> Live Tracking</h3>
+              <button className="btn btn-outline btn-sm" type="button" onClick={() => bookingAPI.getTracking(booking._id).then((response) => setTracking(response?.data?.data || null)).catch((err) => setTrackingError(extractApiError(err, 'Could not refresh live tracking.')))}>
+                <FaSyncAlt /> Refresh Location
+              </button>
+            </div>
+            {trackingLoading ? (
+              <p>Loading provider location...</p>
+            ) : (
+              <>
+                <LiveTrackingMap
+                  providerLocation={tracking?.provider?.location || null}
+                  destinationAddress={destinationAddress}
+                  onEtaChange={setEtaText}
+                />
+                <div className="tracking-panel-copy">
+                  <p>
+                    {tracking?.provider?.location
+                      ? 'Your provider is sharing live location updates.'
+                      : 'Waiting for your provider to start sharing live location from the provider dashboard.'}
+                  </p>
+                  {etaText && <p className="tracking-eta">{etaText}</p>}
+                  {tracking?.provider?.location?.updatedAt && (
+                    <p className="tracking-timestamp">
+                      Last updated: {new Date(tracking.provider.location.updatedAt).toLocaleTimeString()}
+                    </p>
+                  )}
+                  <ErrorMessage message={trackingError} />
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="booking-actions booking-confirmation-actions">
           <Link className="btn btn-primary" to="/booking-history">View Booking History</Link>

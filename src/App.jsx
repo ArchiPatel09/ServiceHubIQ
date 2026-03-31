@@ -22,6 +22,8 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import Settings from './components/shared/Settings';
 import NotFound from './components/shared/NotFound';
 import BookingConfirmation from './components/customer/BookingConfirmation';
+import PaymentSuccess from './components/customer/PaymentSuccess';
+import PaymentCancel from './components/customer/PaymentCancel';
 import StaticPage from './components/static/StaticPage';
 
 function RoleBasedRedirect() {
@@ -113,6 +115,24 @@ function AppShell() {
             element={
               <ProtectedRoute requiredRole="customer">
                 <BookingHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/payment-success"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <PaymentSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/payment-cancel"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <PaymentCancel />
               </ProtectedRoute>
             }
           />

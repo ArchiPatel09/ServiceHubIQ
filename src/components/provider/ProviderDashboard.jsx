@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
-import { bookingAPI, ratingAPI, extractApiError } from '../../services/api';
+import { bookingAPI, ratingAPI, extractApiError, SOCKET_BASE_URL } from '../../services/api';
 import { SERVICE_LABELS } from '../../services/constants';
 import ErrorMessage from '../shared/ErrorMessage';
 import { formatAddress } from '../../utils/address';
@@ -12,7 +13,9 @@ import {
   FaClipboardList,
   FaClock,
   FaSyncAlt,
-  FaRegStar
+  FaRegStar,
+  FaMapMarkedAlt,
+  FaLocationArrow
 } from 'react-icons/fa';
 
 const toUiDate = (iso) => {
@@ -25,6 +28,8 @@ const nextStatus = (status) => {
   if (status === 'In Progress') return 'Completed';
   return null;
 };
+
+const canShareTracking = (booking) => ['Pending', 'In Progress'].includes(booking.status);
 
 const getStarSizeClass = (size) => {
   if (size <= 13) return 'star-size-sm';
@@ -60,10 +65,17 @@ const ProviderDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState('');
+  const [trackingBookingId, setTrackingBookingId] = useState('');
+  const [trackingMessage, setTrackingMessage] = useState('');
 
   const [ratingProfile, setRatingProfile] = useState(null);
   const [loadingRatings, setLoadingRatings] = useState(true);
   const [ratingsError, setRatingsError] = useState('');
+
+  const socketRef = useRef(null);
+  const watchIdRef = useRef(null);
+  const lastPositionRef = useRef(null);
+  const activeBookingRef = useRef('');
 
   const loadBookings = async (silent = false) => {
     try {
@@ -97,6 +109,183 @@ const ProviderDashboard = () => {
     loadBookings();
     loadRatingProfile();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!trackingBookingId) return;
+
+    const activeBooking = bookings.find((booking) => booking._id === trackingBookingId);
+    if (!activeBooking || !canShareTracking(activeBooking)) {
+      stopSharingLocation();
+    }
+  }, [bookings, trackingBookingId]);
+
+  const ensureSocket = () => {
+    if (socketRef.current) {
+      return socketRef.current;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return null;
+    }
+
+    const socket = io(SOCKET_BASE_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+      setTrackingMessage('Live tracking connected.');
+      if (activeBookingRef.current) {
+        socket.emit('joinBookingRoom', { bookingId: activeBookingRef.current });
+        if (lastPositionRef.current) {
+          socket.emit('updateLocation', {
+            bookingId: activeBookingRef.current,
+            ...lastPositionRef.current
+          });
+        }
+      }
+    });
+
+    socket.on('connect_error', () => {
+      setTrackingMessage('Live socket unavailable. Using direct location updates instead.');
+    });
+
+    socketRef.current = socket;
+    return socket;
+  };
+
+  const pushLocationUpdate = async (bookingId, coords) => {
+    const payload = { bookingId, lat: coords.lat, lng: coords.lng };
+    const socket = ensureSocket();
+
+    if (socket?.connected) {
+      return new Promise((resolve) => {
+        socket.emit('updateLocation', payload, async (ack) => {
+          if (ack?.success) {
+            setTrackingMessage('Live location shared successfully.');
+            resolve(true);
+            return;
+          }
+
+          try {
+            await bookingAPI.updateLiveLocation(bookingId, coords);
+            setTrackingMessage('Live location shared using direct updates.');
+            resolve(true);
+          } catch (err) {
+            setError(extractApiError(err, 'Failed to share live location'));
+            resolve(false);
+          }
+        });
+      });
+    }
+
+    try {
+      await bookingAPI.updateLiveLocation(bookingId, coords);
+      setTrackingMessage('Live location shared using direct updates.');
+      return true;
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to share live location'));
+      return false;
+    }
+  };
+
+  const stopSharingLocation = () => {
+    if (watchIdRef.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
+    if (socketRef.current && activeBookingRef.current) {
+      socketRef.current.emit('leaveBookingRoom', { bookingId: activeBookingRef.current });
+    }
+
+    activeBookingRef.current = '';
+    setTrackingBookingId('');
+    setTrackingMessage('Location sharing stopped.');
+  };
+
+  const startSharingLocation = async (booking) => {
+    if (!navigator.geolocation) {
+      setError('Browser geolocation is not supported. Live tracking is unavailable on this device.');
+      return;
+    }
+
+    if (trackingBookingId && trackingBookingId !== booking._id) {
+      stopSharingLocation();
+    }
+
+    setError('');
+    setTrackingBookingId(booking._id);
+    activeBookingRef.current = booking._id;
+    setTrackingMessage('Waiting for live location permission...');
+
+    const socket = ensureSocket();
+    if (socket?.connected) {
+      socket.emit('joinBookingRoom', { bookingId: booking._id });
+    }
+
+    const publishCoordinates = async (coords) => {
+      lastPositionRef.current = coords;
+      await pushLocationUpdate(booking._id, coords);
+    };
+
+    // Publish one immediate location snapshot so customers can see the provider right away,
+    // even before watchPosition delivers follow-up updates.
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await publishCoordinates({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      (geoError) => {
+        setError(
+          geoError.code === 1
+            ? 'Location access was denied. Please allow location sharing to enable live tracking.'
+            : 'Could not read your current location. Please try again.'
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 15000
+      }
+    );
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        await publishCoordinates({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      (geoError) => {
+        setError(
+          geoError.code === 1
+            ? 'Location access was denied. Please allow location sharing to enable live tracking.'
+            : 'Could not read your current location. Please try again.'
+        );
+        stopSharingLocation();
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 15000
+      }
+    );
+  };
 
   const stats = useMemo(() => {
     const total = bookings.length;
@@ -159,6 +348,18 @@ const ProviderDashboard = () => {
           <div className="stat-icon"><FaCalendarCheck /></div>
           <div className="stat-content"><h3>{stats.completed}</h3><p>Completed</p></div>
         </div>
+      </div>
+
+      <div className="provider-tracking-banner">
+        <div>
+          <h3><FaMapMarkedAlt /> Live Tracking</h3>
+          <p>{trackingMessage || 'Start sharing location on an active booking to enable customer live tracking.'}</p>
+        </div>
+        {trackingBookingId && (
+          <button type="button" className="btn btn-outline btn-sm" onClick={stopSharingLocation}>
+            Stop Sharing
+          </button>
+        )}
       </div>
 
       <div className="dashboard-section rating-section">
@@ -255,6 +456,7 @@ const ProviderDashboard = () => {
               const target = nextStatus(booking.status);
               const customer = booking.customerId || {};
               const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
+              const isSharingThisBooking = trackingBookingId === booking._id;
 
               return (
                 <div key={booking._id} className="job-card">
@@ -275,7 +477,16 @@ const ProviderDashboard = () => {
                       </p>
                     )}
                   </div>
-                  <div className="provider-job-actions">
+                  <div className="provider-job-actions provider-job-actions-extended">
+                    {canShareTracking(booking) && (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => (isSharingThisBooking ? stopSharingLocation() : startSharingLocation(booking))}
+                        type="button"
+                      >
+                        <FaLocationArrow /> {isSharingThisBooking ? 'Stop Live Tracking' : 'Share Live Location'}
+                      </button>
+                    )}
                     {target ? (
                       <button
                         className="btn btn-primary btn-sm"
