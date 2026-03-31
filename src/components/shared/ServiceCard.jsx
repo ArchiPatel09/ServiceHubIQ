@@ -1,17 +1,18 @@
 import React from 'react';
-import { FaStar, FaMapMarkerAlt, FaTools, FaCheckCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaMapMarkerAlt, FaTools } from 'react-icons/fa';
+import StarDisplay from './StarDisplay';
 
-const ServiceCard = ({ service, onBook }) => {
-  const { 
-    name, 
-    category, 
-    description, 
-    price, 
-    rating, 
-    reviews, 
-    provider, 
-    location, 
-    available 
+const ServiceCard = ({ service, onBook, onViewDetails }) => {
+  const {
+    name,
+    category,
+    description,
+    price,
+    averageRating,
+    totalReviews,
+    provider,
+    location,
+    available
   } = service;
 
   return (
@@ -32,7 +33,7 @@ const ServiceCard = ({ service, onBook }) => {
       <div className="service-card-body">
         <h3 className="service-name">{name}</h3>
         <p className="service-description">{description}</p>
-        
+
         <div className="service-provider">
           <strong>Provider:</strong> {provider}
         </div>
@@ -43,17 +44,12 @@ const ServiceCard = ({ service, onBook }) => {
         </div>
 
         <div className="service-rating">
-          <div className="stars">
-            {[...Array(5)].map((_, index) => (
-              <FaStar 
-                key={index} 
-                className={`star ${index < Math.floor(rating) ? 'filled' : ''}`}
-              />
-            ))}
-          </div>
-          <span className="rating-text">
-            {rating} ({reviews} reviews)
-          </span>
+          <StarDisplay
+            value={averageRating}
+            totalReviews={totalReviews}
+            showValue={totalReviews > 0}
+            emptyText="No ratings yet"
+          />
         </div>
 
         <div className="service-price">
@@ -62,8 +58,16 @@ const ServiceCard = ({ service, onBook }) => {
         </div>
       </div>
 
-      <div className="service-card-footer">
-        <button 
+      <div className="service-card-footer service-card-actions">
+        <button
+          type="button"
+          className="btn btn-outline btn-block"
+          onClick={onViewDetails}
+        >
+          View Details
+        </button>
+        <button
+          type="button"
           className="btn btn-primary btn-block"
           onClick={onBook}
           disabled={!available}

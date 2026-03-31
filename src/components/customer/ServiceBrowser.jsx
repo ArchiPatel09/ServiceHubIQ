@@ -1,31 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FaFilter, FaMapMarkerAlt, FaSearch, FaUndo } from 'react-icons/fa';
+import ProviderDetailModal from './ProviderDetailModal';
 import ServiceCard from '../shared/ServiceCard';
-import { FaSearch, FaFilter, FaMapMarkerAlt, FaUndo } from 'react-icons/fa';
-import { userAPI } from '../../services/api';
-import { SERVICES, SERVICE_LABELS, CANADIAN_CITIES } from '../../services/constants';
-import { getServicePrice } from '../../utils/servicePricing';
-import { formatCityState } from '../../utils/address';
 import ErrorMessage from '../shared/ErrorMessage';
+import { extractApiError, userAPI } from '../../services/api';
+import { CANADIAN_CITIES, SERVICES, SERVICE_LABELS } from '../../services/constants';
+import { formatCityState } from '../../utils/address';
+import { getServicePrice } from '../../utils/servicePricing';
 
 const ServiceBrowser = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [providers, setProviders] = useState([]);
-  const [filteredServices, setFilteredServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState(null);
 
   useEffect(() => {
     const term = searchParams.get('search') || '';
     setSearchTerm(term);
   }, [searchParams]);
 
-  const categories = ['All Services', ...SERVICES.map((s) => SERVICE_LABELS[s.id])];
+  const categories = ['All Services', ...SERVICES.map((service) => SERVICE_LABELS[service.id])];
   const locations = CANADIAN_CITIES;
 
   useEffect(() => {
@@ -33,13 +34,15 @@ const ServiceBrowser = () => {
       try {
         setLoading(true);
         setError('');
-        const serviceParam = selectedCategory === 'all' ? undefined : Object.keys(SERVICE_LABELS).find(
-          (key) => SERVICE_LABELS[key] === selectedCategory
-        );
+        const serviceParam =
+          selectedCategory === 'all'
+            ? undefined
+            : Object.keys(SERVICE_LABELS).find((key) => SERVICE_LABELS[key] === selectedCategory);
+
         const response = await userAPI.getProviders(serviceParam, selectedLocation || undefined);
         setProviders(response?.data?.data || []);
       } catch (err) {
-        setError('Failed to load providers');
+        setError(extractApiError(err, 'Failed to load providers'));
         setProviders([]);
       } finally {
         setLoading(false);
@@ -49,9 +52,8 @@ const ServiceBrowser = () => {
     loadProviders();
   }, [selectedCategory, selectedLocation]);
 
-  useEffect(() => {
-    const term = searchTerm.trim().toLowerCase();
-    const mapped = providers.map((provider) => {
+  const services = useMemo(() => {
+    return providers.map((provider) => {
       const serviceId = provider.provider_service || provider.providerService;
       const serviceLabel = SERVICE_LABELS[serviceId] || 'Service';
       const price = getServicePrice(serviceId);
@@ -63,15 +65,21 @@ const ServiceBrowser = () => {
         category: serviceLabel,
         description: `Provided by ${provider.name}`,
         price: price || 0,
-        rating: provider.rating || 0,
-        reviews: provider.reviews || 0,
+        averageRating: Number(provider.averageRating || 0),
+        totalReviews: Number(provider.totalReviews || 0),
         provider: provider.name,
         location: formatCityState(provider.address) || 'Location not set',
+        address: provider.address,
+        phone: provider.phone,
         available: true
       };
     });
+  }, [providers]);
 
-    const filtered = mapped.filter((service) => {
+  const filteredServices = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return services.filter((service) => {
       if (!term) return true;
       return (
         service.name.toLowerCase().includes(term) ||
@@ -81,9 +89,7 @@ const ServiceBrowser = () => {
         service.location.toLowerCase().includes(term)
       );
     });
-
-    setFilteredServices(filtered);
-  }, [providers, searchTerm]);
+  }, [services, searchTerm]);
 
   const handleBookService = (serviceKey) => {
     navigate(`/book-service?service=${serviceKey}`);
@@ -112,7 +118,7 @@ const ServiceBrowser = () => {
             type="text"
             placeholder="Search services, providers, locations..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
             className="search-input"
           />
         </div>
@@ -122,7 +128,7 @@ const ServiceBrowser = () => {
             <FaFilter className="filter-icon" />
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(event) => setSelectedCategory(event.target.value)}
               className="filter-select"
             >
               {categories.map((category) => (
@@ -137,7 +143,7 @@ const ServiceBrowser = () => {
             <FaMapMarkerAlt className="filter-icon" />
             <select
               value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
+              onChange={(event) => setSelectedLocation(event.target.value)}
               className="filter-select"
             >
               <option value="">All Locations</option>
@@ -167,7 +173,12 @@ const ServiceBrowser = () => {
       ) : filteredServices.length > 0 ? (
         <div className="services-grid">
           {filteredServices.map((service) => (
-            <ServiceCard key={service.id} service={service} onBook={() => handleBookService(service.serviceKey)} />
+            <ServiceCard
+              key={service.id}
+              service={service}
+              onBook={() => handleBookService(service.serviceKey)}
+              onViewDetails={() => setSelectedProvider(service)}
+            />
           ))}
         </div>
       ) : (
@@ -179,6 +190,13 @@ const ServiceBrowser = () => {
           </button>
         </div>
       )}
+
+      <ProviderDetailModal
+        open={Boolean(selectedProvider)}
+        provider={selectedProvider}
+        onClose={() => setSelectedProvider(null)}
+        onBook={handleBookService}
+      />
     </div>
   );
 };
